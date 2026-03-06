@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: online_teaching_platform
+  datasource:
+    url: jdbc:postgresql://localhost:5432/OnlineTeachingPlatform
+    username: postgres
+    password: Tsoom@0430
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8080
+
+security:
+  jwt:
+    # For dev only; override in prod via env vars
+    secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me-dev-secret-change-me}
+    accessTokenTtlMinutes: ${JWT_TTL_MINUTES:120}
