@@ -12,6 +12,7 @@ public record TeacherProfileResponse(
         String headline,
         String bio,
         List<String> subjects,
+        List<String> skills,
         String avatarUrl,
         BigDecimal hourlyRate,
         List<String> languages,
@@ -28,6 +29,7 @@ public record TeacherProfileResponse(
                 profile.getHeadline(),
                 profile.getBio(),
                 profile.getSubjects(),
+                profile.getSkills(),
                 profile.getAvatarUrl(),
                 profile.getHourlyRate(),
                 profile.getLanguages(),
@@ -39,4 +41,3 @@ public record TeacherProfileResponse(
         );
     }
 }
-

@@ -34,9 +34,27 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+
                         .requestMatchers("/api/teachers/me").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.GET, "/api/teachers", "/api/teachers/*").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/course/**").permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/teacher/*").permitAll()
+                        .requestMatchers("/api/schedules/me/**").hasRole("TEACHER")
+
+                        .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/confirm").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").authenticated()
+
+                        .requestMatchers("/api/notifications/**").authenticated()
+
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -61,7 +79,9 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "http://127.0.0.1:5173"
+                "http://127.0.0.1:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5174"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
@@ -71,4 +91,3 @@ public class SecurityConfig {
         return source;
     }
 }
-

@@ -32,6 +32,11 @@ public class TeacherProfile {
     @Column(name = "subject", nullable = false)
     private List<String> subjects = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "teacher_profile_skills", joinColumns = @JoinColumn(name = "teacher_profile_id"))
+    @Column(name = "skill", nullable = false)
+    private List<String> skills = new ArrayList<>();
+
     private String avatarUrl;
 
     @Column(precision = 10, scale = 2)

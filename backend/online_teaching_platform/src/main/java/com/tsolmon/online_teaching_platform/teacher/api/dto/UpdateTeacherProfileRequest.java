@@ -9,6 +9,7 @@ public record UpdateTeacherProfileRequest(
         @Size(max = 120) String headline,
         @Size(max = 2000) String bio,
         List<String> subjects,
+        List<String> skills,
         String avatarUrl,
         BigDecimal hourlyRate,
         List<String> languages,
@@ -17,4 +18,3 @@ public record UpdateTeacherProfileRequest(
         Integer yearsExperience
 ) {
 }
-

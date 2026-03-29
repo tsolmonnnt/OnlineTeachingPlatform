@@ -2,9 +2,14 @@ import './App.css'
 import { Link, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
+import BookingsPage from './pages/Bookings'
 import LoginPage from './pages/Login'
+import NotificationsPage from './pages/Notifications'
 import RegisterPage from './pages/Register'
+import TeacherDetailPage from './pages/TeacherDetail'
+import TeacherListPage from './pages/TeacherList'
 import TeacherProfilePage from './pages/TeacherProfile'
+import TeacherSchedulePage from './pages/TeacherSchedule'
 
 function App() {
   const { user, logout } = useAuth()
@@ -16,12 +21,18 @@ function App() {
           ОнлайнСургалтынПлатформ
         </Link>
         <nav className="nav">
+          <Link to="/teachers">Багш хайх</Link>
           {user ? (
             <>
               <span className="muted">{user.fullName}</span>
               {user.role === 'TEACHER' ? (
-                <Link to="/teacher/profile">Багшийн профайл</Link>
+                <>
+                  <Link to="/teacher/profile">Профайл</Link>
+                  <Link to="/teacher/schedule">Хуваарь</Link>
+                </>
               ) : null}
+              <Link to="/bookings">Захиалгууд</Link>
+              <Link to="/notifications">Мэдэгдэл</Link>
               <button className="linkButton" onClick={logout}>
                 Гарах
               </button>
@@ -43,23 +54,29 @@ function App() {
               <div className="page">
                 <h1>Тавтай морилно уу</h1>
                 <p className="muted">
-                  ОнлайнСургалтынПлатформ нь багш, сурагчдыг нэг дор холбож, шууд хичээл,
-                  бичлэгтэй курс, гэрийн даалгавар, үнэлгээний процессыг нэг цэгээс удирдах
-                  зориулалттай платформ юм.
+                  Онлайн платформоор багш хайх, сул цаг харах, хичээл захиалах, захиалгын төлөвөө хянах боломжтой.
                 </p>
                 <p className="muted">
                   {user
                     ? `${user.email} (${user.role}) эрхээр нэвтэрсэн байна.`
-                    : 'Хичээл үүсгэх эсвэл хичээлд хамрагдахыг хүсвэл эхлээд нэвтэрч эсвэл бүртгүүлнэ үү.'}
+                    : 'Эхлээд бүртгүүлэх эсвэл нэвтэрч системийн бүх үйлдлийг ашиглана уу.'}
                 </p>
               </div>
             }
           />
+          <Route path="/teachers" element={<TeacherListPage />} />
+          <Route path="/teachers/:teacherId" element={<TeacherDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
+          <Route element={<ProtectedRoute />}>
+            <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+          </Route>
+
           <Route element={<ProtectedRoute requireRole="TEACHER" />}>
             <Route path="/teacher/profile" element={<TeacherProfilePage />} />
+            <Route path="/teacher/schedule" element={<TeacherSchedulePage />} />
           </Route>
 
           <Route path="*" element={<div className="page">Хуудас олдсонгүй</div>} />

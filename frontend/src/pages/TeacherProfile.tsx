@@ -22,6 +22,7 @@ export default function TeacherProfilePage() {
   const [headline, setHeadline] = useState('')
   const [bio, setBio] = useState('')
   const [subjectsCsv, setSubjectsCsv] = useState('')
+  const [skillsCsv, setSkillsCsv] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [hourlyRate, setHourlyRate] = useState('')
   const [languagesCsv, setLanguagesCsv] = useState('')
@@ -34,6 +35,7 @@ export default function TeacherProfilePage() {
       headline: headline.trim() || null,
       bio: bio.trim() || null,
       subjects: splitCsv(subjectsCsv),
+      skills: splitCsv(skillsCsv),
       avatarUrl: avatarUrl.trim() || null,
       hourlyRate: hourlyRate.trim() ? Number(hourlyRate) : null,
       languages: splitCsv(languagesCsv),
@@ -45,6 +47,7 @@ export default function TeacherProfilePage() {
     headline,
     bio,
     subjectsCsv,
+    skillsCsv,
     avatarUrl,
     hourlyRate,
     languagesCsv,
@@ -63,6 +66,7 @@ export default function TeacherProfilePage() {
         setHeadline(p.headline ?? '')
         setBio(p.bio ?? '')
         setSubjectsCsv(joinCsv(p.subjects))
+        setSkillsCsv(joinCsv(p.skills))
         setAvatarUrl(p.avatarUrl ?? '')
         setHourlyRate(p.hourlyRate == null ? '' : String(p.hourlyRate))
         setLanguagesCsv(joinCsv(p.languages))
@@ -135,6 +139,10 @@ export default function TeacherProfilePage() {
           <input value={subjectsCsv} onChange={(e) => setSubjectsCsv(e.target.value)} />
         </label>
         <label>
+          Ур чадварууд (таслалаар тусгаарлана)
+          <input value={skillsCsv} onChange={(e) => setSkillsCsv(e.target.value)} />
+        </label>
+        <label>
           Хэлнүүд (таслалаар тусгаарлана)
           <input value={languagesCsv} onChange={(e) => setLanguagesCsv(e.target.value)} />
         </label>
@@ -175,4 +183,3 @@ export default function TeacherProfilePage() {
     </div>
   )
 }
-

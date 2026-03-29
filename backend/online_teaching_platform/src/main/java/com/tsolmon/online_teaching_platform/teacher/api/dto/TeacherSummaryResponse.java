@@ -1,0 +1,33 @@
+package com.tsolmon.online_teaching_platform.teacher.api.dto;
+
+import com.tsolmon.online_teaching_platform.teacher.domain.TeacherProfile;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+public record TeacherSummaryResponse(
+        Long id,
+        Long userId,
+        String fullName,
+        String headline,
+        List<String> subjects,
+        List<String> skills,
+        BigDecimal hourlyRate,
+        Integer yearsExperience,
+        String location
+) {
+    public static TeacherSummaryResponse from(TeacherProfile profile) {
+        return new TeacherSummaryResponse(
+                profile.getId(),
+                profile.getUser().getId(),
+                profile.getUser().getFullName(),
+                profile.getHeadline(),
+                profile.getSubjects(),
+                profile.getSkills(),
+                profile.getHourlyRate(),
+                profile.getYearsExperience(),
+                profile.getLocation()
+        );
+    }
+}
+

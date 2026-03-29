@@ -4,7 +4,7 @@ import { ApiError } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
 
 export default function LoginPage() {
-  const { login, user } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,9 +17,7 @@ export default function LoginPage() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      const role = user?.role
-      if (role === 'TEACHER') navigate('/teacher/profile', { replace: true })
-      else navigate('/', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
       else setError('Нэвтрэхэд алдаа гарлаа')
@@ -56,4 +54,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
