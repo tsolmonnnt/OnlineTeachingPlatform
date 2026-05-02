@@ -33,6 +33,16 @@ public class ScheduleController {
         return scheduleService.addMySlot(authUser, request);
     }
 
+    @PutMapping("/me/{slotId}")
+    public AvailabilitySlotResponse updateMySlot(
+            Authentication authentication,
+            @PathVariable Long slotId,
+            @Valid @RequestBody CreateAvailabilitySlotRequest request
+    ) {
+        AuthUser authUser = (AuthUser) authentication.getPrincipal();
+        return scheduleService.updateMySlot(authUser, slotId, request);
+    }
+
     @DeleteMapping("/me/{slotId}")
     public void deleteMySlot(Authentication authentication, @PathVariable Long slotId) {
         AuthUser authUser = (AuthUser) authentication.getPrincipal();

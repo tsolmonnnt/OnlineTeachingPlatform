@@ -1,5 +1,6 @@
 package com.tsolmon.online_teaching_platform.schedule.domain;
 
+import com.tsolmon.online_teaching_platform.course.domain.CourseSubject;
 import com.tsolmon.online_teaching_platform.teacher.domain.TeacherProfile;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -28,6 +29,10 @@ public class TeacherAvailabilitySlot {
 
     @Column(nullable = false)
     private boolean booked;
+
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_subject_id")
+    private CourseSubject courseSubject;
 
     @PrePersist
     public void prePersist() {

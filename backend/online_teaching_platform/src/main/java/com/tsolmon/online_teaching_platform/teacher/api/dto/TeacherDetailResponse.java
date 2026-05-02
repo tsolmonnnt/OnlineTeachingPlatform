@@ -18,9 +18,16 @@ public record TeacherDetailResponse(
         List<String> languages,
         String location,
         String phone,
-        Integer yearsExperience
+        Integer yearsExperience,
+        boolean verified,
+        Double averageRating,
+        long reviewCount
 ) {
-    public static TeacherDetailResponse from(TeacherProfile profile) {
+    public static TeacherDetailResponse from(
+            TeacherProfile profile,
+            Double averageRating,
+            long reviewCount
+    ) {
         return new TeacherDetailResponse(
                 profile.getId(),
                 profile.getUser().getId(),
@@ -34,7 +41,10 @@ public record TeacherDetailResponse(
                 profile.getLanguages(),
                 profile.getLocation(),
                 profile.getPhone(),
-                profile.getYearsExperience()
+                profile.getYearsExperience(),
+                profile.isVerified(),
+                averageRating,
+                reviewCount
         );
     }
 }

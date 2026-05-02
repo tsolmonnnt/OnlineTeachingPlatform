@@ -19,6 +19,7 @@ public record TeacherProfileResponse(
         String location,
         String phone,
         Integer yearsExperience,
+        boolean verified,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -36,6 +37,7 @@ public record TeacherProfileResponse(
                 profile.getLocation(),
                 profile.getPhone(),
                 profile.getYearsExperience(),
+                profile.isVerified(),
                 profile.getCreatedAt(),
                 profile.getUpdatedAt()
         );

@@ -17,10 +17,14 @@ public record BookingResponse(
         Long slotId,
         LocalDateTime slotStartTime,
         LocalDateTime slotEndTime,
+        Long courseSubjectId,
+        String courseSubjectName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
     public static BookingResponse from(Booking booking) {
+        Long csId = booking.getCourseSubject() != null ? booking.getCourseSubject().getId() : null;
+        String csName = booking.getCourseSubject() != null ? booking.getCourseSubject().getName() : null;
         return new BookingResponse(
                 booking.getId(),
                 booking.getStatus(),
@@ -33,9 +37,10 @@ public record BookingResponse(
                 booking.getAvailabilitySlot().getId(),
                 booking.getAvailabilitySlot().getStartTime(),
                 booking.getAvailabilitySlot().getEndTime(),
+                csId,
+                csName,
                 booking.getCreatedAt(),
                 booking.getUpdatedAt()
         );
     }
 }
-

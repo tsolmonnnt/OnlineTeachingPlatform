@@ -1,19 +1,35 @@
 spring:
   application:
     name: online_teaching_platform
+  servlet:
+    multipart:
+      max-file-size: 40MB
+      max-request-size: 40MB
   datasource:
     url: jdbc:postgresql://localhost:5432/OnlineTeachingPlatform
     username: postgres
     password: Tsoom@0430
+  flyway:
+    enabled: true
   jpa:
     hibernate:
       ddl-auto: update
 
+logging:
+  level:
+    org.flywaydb: INFO
+
 server:
   port: 8080
 
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+  folder: ${CLOUDINARY_FOLDER:subjectFiles}
+  upload-preset: ${CLOUDINARY_UPLOAD_PRESET:}
+
 security:
   jwt:
-    # For dev only; override in prod via env vars
     secret: ${JWT_SECRET:dev-secret-change-me-dev-secret-change-me-dev-secret-change-me}
     accessTokenTtlMinutes: ${JWT_TTL_MINUTES:120}

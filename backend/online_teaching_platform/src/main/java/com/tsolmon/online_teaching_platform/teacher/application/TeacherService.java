@@ -1,6 +1,7 @@
 package com.tsolmon.online_teaching_platform.teacher.application;
 
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
+import com.tsolmon.online_teaching_platform.review.domain.ReviewRepository;
 import com.tsolmon.online_teaching_platform.schedule.domain.TeacherAvailabilityRepository;
 import com.tsolmon.online_teaching_platform.teacher.api.dto.TeacherDetailResponse;
 import com.tsolmon.online_teaching_platform.teacher.api.dto.TeacherProfileResponse;
@@ -25,6 +26,7 @@ import java.util.Objects;
 public class TeacherService {
     private final TeacherRepository teacherRepository;
     private final TeacherAvailabilityRepository availabilityRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional(readOnly = true)
     public TeacherProfileResponse getMyProfile(AuthUser authUser) {
@@ -66,7 +68,7 @@ public class TeacherService {
                 .filter(p -> matchesList(p.getSubjects(), normalizedSubject))
                 .filter(p -> matchesList(p.getSkills(), normalizedSkill))
                 .filter(p -> hasAvailabilityAfter(p.getId(), availableAfter))
-                .map(TeacherSummaryResponse::from)
+                .map(this::toSummary)
                 .toList();
     }
 
@@ -74,7 +76,19 @@ public class TeacherService {
     public TeacherDetailResponse getTeacherById(Long teacherId) {
         TeacherProfile profile = teacherRepository.findById(teacherId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teacher not found"));
-        return TeacherDetailResponse.from(profile);
+        return TeacherDetailResponse.from(
+                profile,
+                reviewRepository.averageRatingByTeacher(profile.getId()).orElse(null),
+                reviewRepository.countByTeacherProfile_Id(profile.getId())
+        );
+    }
+
+    private TeacherSummaryResponse toSummary(TeacherProfile profile) {
+        return TeacherSummaryResponse.from(
+                profile,
+                reviewRepository.averageRatingByTeacher(profile.getId()).orElse(null),
+                reviewRepository.countByTeacherProfile_Id(profile.getId())
+        );
     }
 
     private static String normalize(String value) {

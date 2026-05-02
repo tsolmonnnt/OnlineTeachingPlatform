@@ -9,16 +9,21 @@ public record AvailabilitySlotResponse(
         Long teacherProfileId,
         LocalDateTime startTime,
         LocalDateTime endTime,
-        boolean booked
+        boolean booked,
+        Long courseSubjectId,
+        String courseSubjectName
 ) {
     public static AvailabilitySlotResponse from(TeacherAvailabilitySlot slot) {
+        Long csId = slot.getCourseSubject() != null ? slot.getCourseSubject().getId() : null;
+        String csName = slot.getCourseSubject() != null ? slot.getCourseSubject().getName() : null;
         return new AvailabilitySlotResponse(
                 slot.getId(),
                 slot.getTeacherProfile().getId(),
                 slot.getStartTime(),
                 slot.getEndTime(),
-                slot.isBooked()
+                slot.isBooked(),
+                csId,
+                csName
         );
     }
 }
-

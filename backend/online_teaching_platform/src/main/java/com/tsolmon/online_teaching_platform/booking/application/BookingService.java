@@ -49,9 +49,28 @@ public class BookingService {
         if (slot.isBooked()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Selected slot is already booked");
         }
+        if (slot.getCourseSubject() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "This availability slot has no course attached; the teacher must recreate it"
+            );
+        }
 
         User student = userRepository.findById(authUser.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+
+        String subjectLine;
+        if (request.subject() != null && !request.subject().isBlank()) {
+            subjectLine = request.subject().trim();
+            if (!subjectLine.equalsIgnoreCase(slot.getCourseSubject().getName())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Subject must match the slot course: " + slot.getCourseSubject().getName()
+                );
+            }
+        } else {
+            subjectLine = slot.getCourseSubject().getName();
+        }
 
         slot.setBooked(true);
         availabilityRepository.save(slot);
@@ -60,7 +79,8 @@ public class BookingService {
         booking.setStudentUser(student);
         booking.setTeacherProfile(teacher);
         booking.setAvailabilitySlot(slot);
-        booking.setSubject(request.subject().trim());
+        booking.setCourseSubject(slot.getCourseSubject());
+        booking.setSubject(subjectLine);
         booking.setNote(request.note());
         booking.setStatus(BookingStatus.PENDING);
 
@@ -69,7 +89,7 @@ public class BookingService {
         notificationService.notifyUser(
                 teacher.getUser().getId(),
                 "New booking request",
-                student.getFullName() + " booked a lesson for " + request.subject().trim()
+                student.getFullName() + " booked a lesson for " + subjectLine
         );
         notificationService.notifyUser(
                 student.getId(),

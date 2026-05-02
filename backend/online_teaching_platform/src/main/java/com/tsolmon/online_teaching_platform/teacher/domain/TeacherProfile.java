@@ -54,11 +54,15 @@ public class TeacherProfile {
 
     private Integer yearsExperience;
 
+    @Column(nullable = false)
+    private boolean verified;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     @PrePersist
     public void prePersist() {
+        this.verified = false;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }

@@ -35,16 +35,23 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
 
                         .requestMatchers("/api/teachers/me").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.GET, "/api/teachers", "/api/teachers/*").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/course/subjects/teaching").hasRole("TEACHER")
+
                         .requestMatchers(HttpMethod.GET, "/api/course/**").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/schedules/teacher/*").permitAll()
-                        .requestMatchers("/api/schedules/me/**").hasRole("TEACHER")
+                        // "/api/schedules/me/**" does not match the exact path "/api/schedules/me" (no extra segment)
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/me").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.POST, "/api/schedules/me").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.PUT, "/api/schedules/me/*").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/schedules/me/*").hasRole("TEACHER")
 
                         .requestMatchers(HttpMethod.POST, "/api/bookings").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.GET, "/api/bookings/me").authenticated()
@@ -52,6 +59,22 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").authenticated()
 
                         .requestMatchers("/api/notifications/**").authenticated()
+
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/reviews/teacher/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/reviews").hasRole("STUDENT")
+
+                        .requestMatchers(HttpMethod.GET, "/api/materials/teacher/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/materials").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/materials/**").hasRole("TEACHER")
+
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/teacher/*/published").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/*/public").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/quizzes/*/attempts").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/api/quizzes").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.GET, "/api/quizzes/mine/**").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/quizzes/mine/**").hasRole("TEACHER")
 
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
 

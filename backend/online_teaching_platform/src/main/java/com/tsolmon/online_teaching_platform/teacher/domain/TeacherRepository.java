@@ -6,4 +6,6 @@ import java.util.Optional;
 
 public interface TeacherRepository extends JpaRepository<TeacherProfile, Long> {
     Optional<TeacherProfile> findByUser_Id(Long userId);
+
+    long countByVerifiedTrue();
 }

@@ -1,0 +1,11 @@
+# Activate only for the first run against an empty PostgreSQL database so Hibernate can create tables.
+# Usage: mvn spring-boot:run -Dspring-boot.run.arguments=--spring.profiles.active=bootstrap
+# Then run without this profile; default uses ddl-auto validate with Flyway repairs.
+#
+# Flyway is OFF here so migrations do not run before tables exist (V1–V3 are repairs / additive).
+spring:
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update

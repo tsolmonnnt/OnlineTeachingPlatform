@@ -14,9 +14,12 @@ public record TeacherSummaryResponse(
         List<String> skills,
         BigDecimal hourlyRate,
         Integer yearsExperience,
-        String location
+        String location,
+        boolean verified,
+        Double averageRating,
+        long reviewCount
 ) {
-    public static TeacherSummaryResponse from(TeacherProfile profile) {
+    public static TeacherSummaryResponse from(TeacherProfile profile, Double averageRating, long reviewCount) {
         return new TeacherSummaryResponse(
                 profile.getId(),
                 profile.getUser().getId(),
@@ -26,7 +29,10 @@ public record TeacherSummaryResponse(
                 profile.getSkills(),
                 profile.getHourlyRate(),
                 profile.getYearsExperience(),
-                profile.getLocation()
+                profile.getLocation(),
+                profile.isVerified(),
+                averageRating,
+                reviewCount
         );
     }
 }
