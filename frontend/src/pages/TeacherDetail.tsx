@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
-import type { AvailabilitySlot, Booking, TeacherDetail } from '../auth/types'
+import type { AvailabilitySlot, Booking, QuizSummary, ReviewItem, TeacherDetail, TeachingMaterial } from '../auth/types'
 
 function formatIsoDate(value: string) {
   return new Date(value).toLocaleString('mn-MN')
@@ -14,9 +14,18 @@ export default function TeacherDetailPage() {
 
   const [teacher, setTeacher] = useState<TeacherDetail | null>(null)
   const [slots, setSlots] = useState<AvailabilitySlot[]>([])
+  const [materials, setMaterials] = useState<TeachingMaterial[]>([])
+  const [reviews, setReviews] = useState<ReviewItem[]>([])
+  const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
+  const [myBookings, setMyBookings] = useState<Booking[]>([])
+
   const [subject, setSubject] = useState('')
   const [note, setNote] = useState('')
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null)
+  const [reviewBookingId, setReviewBookingId] = useState<number | null>(null)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -24,6 +33,19 @@ export default function TeacherDetailPage() {
   const activeTeacherId = Number(teacherId)
 
   const selectableSlots = useMemo(() => slots.filter((s) => !s.booked), [slots])
+
+  const reviewableBookings = useMemo(() => {
+    if (user?.role !== 'STUDENT' || !activeTeacherId) return []
+    return myBookings.filter(
+      (b) => b.status === 'CONFIRMED' && b.teacherId === activeTeacherId,
+    )
+  }, [myBookings, user?.role, activeTeacherId])
+
+  useEffect(() => {
+    if (!selectedSlotId) return
+    const slot = slots.find((s) => s.id === selectedSlotId)
+    if (slot?.courseSubjectName) setSubject(slot.courseSubjectName)
+  }, [selectedSlotId, slots])
 
   useEffect(() => {
     ;(async () => {
@@ -41,10 +63,27 @@ export default function TeacherDetailPage() {
           `/api/schedules/teacher/${activeTeacherId}?from=${fromParam}&to=${toParam}`,
           { method: 'GET' },
         )
+        const mats = await fetchJson<TeachingMaterial[]>(
+          `/api/materials/teacher/${activeTeacherId}`,
+          { method: 'GET' },
+        )
+        const rev = await fetchJson<ReviewItem[]>(`/api/reviews/teacher/${activeTeacherId}`, { method: 'GET' })
+        const qz = await fetchJson<QuizSummary[]>(
+          `/api/quizzes/teacher/${activeTeacherId}/published`,
+          { method: 'GET' },
+        )
 
         setTeacher(detail)
         setSlots(schedule)
+        setMaterials(mats)
+        setReviews(rev)
+        setQuizzes(qz)
         setSubject(detail.subjects?.[0] ?? '')
+
+        if (user?.role === 'STUDENT') {
+          const bookings = await fetchJson<Booking[]>('/api/bookings/me', { method: 'GET' })
+          setMyBookings(bookings)
+        }
       } catch (err) {
         if (err instanceof ApiError) setError(err.message)
         else setError('Багшийн мэдээлэл ачаалж чадсангүй')
@@ -52,7 +91,7 @@ export default function TeacherDetailPage() {
         setIsLoading(false)
       }
     })()
-  }, [activeTeacherId])
+  }, [activeTeacherId, user?.role])
 
   async function onBook() {
     if (!selectedSlotId) {
@@ -85,6 +124,32 @@ export default function TeacherDetailPage() {
     }
   }
 
+  async function submitReview() {
+    if (!reviewBookingId) {
+      setError('Захиалга сонгоно уу')
+      return
+    }
+    setError(null)
+    setSuccess(null)
+    try {
+      await fetchJson('/api/reviews', {
+        method: 'POST',
+        body: JSON.stringify({
+          bookingId: reviewBookingId,
+          rating: reviewRating,
+          comment: reviewComment.trim() || null,
+        }),
+      })
+      setSuccess('Сэтгэгдэл бүртгэгдлээ')
+      const rev = await fetchJson<ReviewItem[]>(`/api/reviews/teacher/${activeTeacherId}`, { method: 'GET' })
+      setReviews(rev)
+      setReviewComment('')
+    } catch (err) {
+      if (err instanceof ApiError) setError(err.message)
+      else setError('Илгээхэд алдаа гарлаа')
+    }
+  }
+
   if (isLoading) {
     return <div className="page"><p className="muted">Ачаалж байна...</p></div>
   }
@@ -103,6 +168,109 @@ export default function TeacherDetailPage() {
         <p><strong>Ур чадвар:</strong> {(teacher.skills ?? []).join(', ') || '-'}</p>
         <p><strong>Хэл:</strong> {(teacher.languages ?? []).join(', ') || '-'}</p>
         <p><strong>Үнэ:</strong> {teacher.hourlyRate ?? '-'}</p>
+        <p className="muted small">
+          {teacher.verified ? 'Баталгаажсан багш' : 'Профайл хүлээгдэж буй'} · Дундаж үнэлгээ:{' '}
+          {teacher.reviewCount > 0 && teacher.averageRating != null
+            ? `${teacher.averageRating.toFixed(1)} (${teacher.reviewCount} сэтгэгдэл)`
+            : '—'}
+        </p>
+      </div>
+
+      {materials.length ? (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <h2 style={{ marginTop: 0 }}>Материал</h2>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {materials.map((m) => (
+              <li key={m.id}>
+                {m.secureUrl ? (
+                  <a href={m.secureUrl} target="_blank" rel="noreferrer">
+                    {m.title}
+                    {m.courseSubjectName ? ` · ${m.courseSubjectName}` : ''}
+                  </a>
+                ) : (
+                  <span className="muted" title="Тухайн хичээлээр баталгаажсан захиалгатай, нэвтэрсэн сурагчид линк харагдана">
+                    {m.title}
+                    {m.courseSubjectName ? ` · ${m.courseSubjectName}` : ''}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {quizzes.length ? (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <h2 style={{ marginTop: 0 }}>Нийтлэгдсэн тестүүд</h2>
+          <p className="muted small" style={{ marginTop: 0 }}>
+            Тест ачаалах, оролцох нь нэвтэрсэн хэрэглэгчдэд зориулагдсан. Сурагч тухайн багш, тухайн хичээлээр баталгаажсан захиалгатай үед л зөвшөөрөгдөнө.
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {quizzes.map((q) => (
+              <li key={q.id}>
+                <Link to={`/quizzes/${q.id}/take`}>{q.title}</Link>
+                {q.courseSubjectName ? (
+                  <span className="muted small"> · {q.courseSubjectName}</span>
+                ) : null}
+                {' '}
+                <span className="muted small">({q.questionCount} асуулт)</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="card" style={{ marginBottom: 12 }}>
+        <h2 style={{ marginTop: 0 }}>Сэтгэгдэл</h2>
+        {reviews.length ? (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {reviews.map((r) => (
+              <div key={r.id} className="muted">
+                <strong>{r.studentName}</strong> — {r.rating}★ · {formatIsoDate(r.createdAt)}
+                {r.comment ? <div>{r.comment}</div> : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">Сэтгэгдэл алга.</p>
+        )}
+
+        {user?.role === 'STUDENT' && reviewableBookings.length ? (
+          <div className="form" style={{ marginTop: 12 }}>
+            <h3>Сэтгэгдэл үлдээх (баталгаажсан захиалга)</h3>
+            <label>
+              Захиалга
+              <select
+                value={reviewBookingId ?? ''}
+                onChange={(e) => setReviewBookingId(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Сонгох</option>
+                {reviewableBookings.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    #{b.id} — {b.courseSubjectName ?? b.subject} — {formatIsoDate(b.slotStartTime)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Он (1–5)
+              <input
+                type="number"
+                min={1}
+                max={5}
+                value={reviewRating}
+                onChange={(e) => setReviewRating(Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Сэтгэгдэл
+              <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} rows={3} />
+            </label>
+            <button type="button" onClick={() => void submitReview()}>
+              Илгээх
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="card form">
@@ -117,7 +285,7 @@ export default function TeacherDetailPage() {
               <option value="">Сонгох</option>
               {selectableSlots.map((slot) => (
                 <option key={slot.id} value={slot.id}>
-                  {formatIsoDate(slot.startTime)} - {formatIsoDate(slot.endTime)}
+                  {slot.courseSubjectName ?? 'Хичээл'} · {formatIsoDate(slot.startTime)} – {formatIsoDate(slot.endTime)}
                 </option>
               ))}
             </select>
@@ -127,7 +295,7 @@ export default function TeacherDetailPage() {
         )}
 
         <label>
-          Хичээлийн нэр
+          Хичээлийн нэр (слот сонгоход автоматаар бөглөгдөнө; захиалгын баталгаанд хэрэглэгдэнэ)
           <input value={subject} onChange={(e) => setSubject(e.target.value)} />
         </label>
 
@@ -146,4 +314,3 @@ export default function TeacherDetailPage() {
     </div>
   )
 }
-

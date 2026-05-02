@@ -114,7 +114,8 @@ export default function TeacherProfilePage() {
       <h1>Багшийн профайл</h1>
       {profile ? (
         <p className="muted">
-          Профайл ID: {profile.id} • Шинэчилсэн: {new Date(profile.updatedAt).toLocaleString('mn-MN')}
+          Профайл ID: {profile.id} • Админ баталгаажуулалт: {profile.verified ? 'Тийм' : 'Хүлээгдэж буй'} • Шинэчилсэн:{' '}
+          {new Date(profile.updatedAt).toLocaleString('mn-MN')}
         </p>
       ) : null}
 

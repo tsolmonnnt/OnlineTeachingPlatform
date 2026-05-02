@@ -22,6 +22,7 @@ export default function RegisterPage() {
     try {
       await register({ fullName, email, password, role })
       if (role === 'TEACHER') navigate('/teacher/profile', { replace: true })
+      else if (role === 'ADMIN') navigate('/admin', { replace: true })
       else navigate('/', { replace: true })
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)

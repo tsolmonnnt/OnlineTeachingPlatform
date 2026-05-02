@@ -2,14 +2,20 @@ import './App.css'
 import { Link, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/AuthContext'
 import { ProtectedRoute } from './auth/ProtectedRoute'
+import AdminDashboardPage from './pages/AdminDashboard'
 import BookingsPage from './pages/Bookings'
 import LoginPage from './pages/Login'
 import NotificationsPage from './pages/Notifications'
+import QuizTakePage from './pages/QuizTake'
 import RegisterPage from './pages/Register'
 import TeacherDetailPage from './pages/TeacherDetail'
 import TeacherListPage from './pages/TeacherList'
+import TeacherMaterialsPage from './pages/TeacherMaterials'
 import TeacherProfilePage from './pages/TeacherProfile'
+import TeacherQuizzesPage from './pages/TeacherQuizzes'
 import TeacherSchedulePage from './pages/TeacherSchedule'
+import MyCoursesPage from './pages/MyCourses'
+import TeacherSubjectPage from './pages/TeacherSubjectPage'
 
 function App() {
   const { user, logout } = useAuth()
@@ -25,12 +31,18 @@ function App() {
           {user ? (
             <>
               <span className="muted">{user.fullName}</span>
+              {user.role === 'TEACHER' || user.role === 'STUDENT' ? (
+                <Link to="/my-courses">Миний хичээлүүд</Link>
+              ) : null}
               {user.role === 'TEACHER' ? (
                 <>
                   <Link to="/teacher/profile">Профайл</Link>
                   <Link to="/teacher/schedule">Хуваарь</Link>
+                  <Link to="/teacher/materials">Материал</Link>
+                  <Link to="/teacher/quizzes">Тест</Link>
                 </>
               ) : null}
+              {user.role === 'ADMIN' ? <Link to="/admin">Админ</Link> : null}
               <Link to="/bookings">Захиалгууд</Link>
               <Link to="/notifications">Мэдэгдэл</Link>
               <button className="linkButton" onClick={logout}>
@@ -66,17 +78,26 @@ function App() {
           />
           <Route path="/teachers" element={<TeacherListPage />} />
           <Route path="/teachers/:teacherId" element={<TeacherDetailPage />} />
+          <Route path="/quizzes/:quizId/take" element={<QuizTakePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
           <Route element={<ProtectedRoute />}>
+            <Route path="/my-courses" element={<MyCoursesPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
 
+          <Route element={<ProtectedRoute requireRole="ADMIN" />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+          </Route>
+
           <Route element={<ProtectedRoute requireRole="TEACHER" />}>
+            <Route path="/teacher/subject/:courseSubjectId" element={<TeacherSubjectPage />} />
             <Route path="/teacher/profile" element={<TeacherProfilePage />} />
             <Route path="/teacher/schedule" element={<TeacherSchedulePage />} />
+            <Route path="/teacher/materials" element={<TeacherMaterialsPage />} />
+            <Route path="/teacher/quizzes" element={<TeacherQuizzesPage />} />
           </Route>
 
           <Route path="*" element={<div className="page">Хуудас олдсонгүй</div>} />

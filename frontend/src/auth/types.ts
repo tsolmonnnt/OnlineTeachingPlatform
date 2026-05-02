@@ -25,6 +25,7 @@ export type TeacherProfile = {
   location: string | null
   phone: string | null
   yearsExperience: number | null
+  verified: boolean
   createdAt: string
   updatedAt: string
 }
@@ -39,6 +40,9 @@ export type TeacherSummary = {
   hourlyRate: string | number | null
   yearsExperience: number | null
   location: string | null
+  verified: boolean
+  averageRating: number | null
+  reviewCount: number
 }
 
 export type TeacherDetail = {
@@ -55,6 +59,91 @@ export type TeacherDetail = {
   location: string | null
   phone: string | null
   yearsExperience: number | null
+  verified: boolean
+  averageRating: number | null
+  reviewCount: number
+}
+
+export type ReviewItem = {
+  id: number
+  bookingId: number
+  studentName: string
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
+export type TeachingMaterial = {
+  id: number
+  teacherProfileId: number
+  courseSubjectId: number | null
+  courseSubjectName: string | null
+  title: string
+  description: string | null
+  secureUrl: string | null
+  contentType: string | null
+  sizeBytes: number | null
+  createdAt: string
+}
+
+export type AdminStats = {
+  totalUsers: number
+  studentCount: number
+  teacherCount: number
+  adminCount: number
+  totalBookings: number
+  verifiedTeacherCount: number
+  totalTeachers: number
+}
+
+export type AdminTeacherRow = {
+  teacherProfileId: number
+  userId: number
+  fullName: string
+  email: string
+  verified: boolean
+}
+
+export type UserRow = {
+  id: number
+  fullName: string
+  email: string
+  role: Role
+}
+
+export type QuizSummary = {
+  id: number
+  courseSubjectId: number | null
+  courseSubjectName: string | null
+  title: string
+  description: string | null
+  timeLimitMinutes: number
+  published: boolean
+  questionCount: number
+  createdAt: string
+}
+
+export type QuizPublic = {
+  id: number
+  teacherProfileId: number
+  title: string
+  description: string | null
+  timeLimitMinutes: number
+  questions: {
+    id: number
+    orderIndex: number
+    questionType: 'MCQ' | 'TRUE_FALSE' | 'SHORT_ANSWER'
+    prompt: string
+    optionsJson: string | null
+  }[]
+}
+
+export type AttemptResult = {
+  attemptId: number
+  quizId: number
+  score: number
+  maxScore: number
+  percent: number
 }
 
 export type AvailabilitySlot = {
@@ -63,6 +152,8 @@ export type AvailabilitySlot = {
   startTime: string
   endTime: string
   booked: boolean
+  courseSubjectId: number | null
+  courseSubjectName: string | null
 }
 
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED'
@@ -79,6 +170,8 @@ export type Booking = {
   slotId: number
   slotStartTime: string
   slotEndTime: string
+  courseSubjectId: number | null
+  courseSubjectName: string | null
   createdAt: string
   updatedAt: string
 }

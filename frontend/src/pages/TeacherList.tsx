@@ -100,6 +100,12 @@ export default function TeacherListPage() {
             <p>
               <strong>Үнэ:</strong> {teacher.hourlyRate ?? '-'}
             </p>
+            <p className="muted small">
+              {teacher.verified ? 'Баталгаажсан багш' : 'Хүлээгдэж буй'} · Үнэлгээ:{' '}
+              {teacher.reviewCount > 0 && teacher.averageRating != null
+                ? `${teacher.averageRating.toFixed(1)} (${teacher.reviewCount})`
+                : '—'}
+            </p>
             <Link to={`/teachers/${teacher.id}`}>Дэлгэрэнгүй</Link>
           </article>
         ))}

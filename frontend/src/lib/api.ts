@@ -48,3 +48,33 @@ export async function fetchJson<T>(
   return body as T
 }
 
+export async function postFormData<T>(path: string, formData: FormData): Promise<T> {
+  const baseUrl = getApiBaseUrl()
+  const url = `${baseUrl}${path}`
+  const token = localStorage.getItem('accessToken')
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  let body: unknown = null
+  const contentType = res.headers.get('content-type') ?? ''
+  if (contentType.includes('application/json')) {
+    body = await res.json()
+  } else {
+    body = await res.text()
+  }
+
+  if (!res.ok) {
+    const message =
+      typeof body === 'object' && body && 'message' in body
+        ? String((body as any).message)
+        : `Request failed (${res.status})`
+    throw new ApiError(message, res.status, body)
+  }
+
+  return body as T
+}
+
