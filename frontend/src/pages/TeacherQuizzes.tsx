@@ -100,7 +100,7 @@ export default function TeacherQuizzesPage() {
       {!subjects.length ? (
         <div className="card" style={{ marginBottom: 12 }}>
           <p className="muted">
-            Таны зааж буй хичээл (каталогтой таарсан) алга. <Link to="/teacher/profile">Профайл</Link> дээр хичээлийн нэрээ оруулна уу.
+            Таны зааж буй хичээл алга. <Link to="/teacher/profile">Профайл</Link> дээр заах хичээлүүдээ оруулна уу.
           </p>
         </div>
       ) : null}
@@ -119,7 +119,7 @@ export default function TeacherQuizzesPage() {
           </div>
         ) : (
           <label>
-            Хичээл (таны профайл + каталог)
+            Хичээл (таны профайл)
             <select
               value={courseSubjectId}
               onChange={(e) => setCourseSubjectId(e.target.value ? Number(e.target.value) : '')}

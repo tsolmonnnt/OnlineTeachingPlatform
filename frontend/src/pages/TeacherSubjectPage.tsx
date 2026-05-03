@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, fetchJson, postFormData } from '../lib/api'
+import { FileUploadPreview } from '../components/FileUploadPreview'
 import { Modal } from '../components/Modal'
 import type { AvailabilitySlot, CourseSubject, QuizSummary, TeachingMaterial } from '../auth/types'
 
@@ -79,7 +80,7 @@ export default function TeacherSubjectPage() {
       const meta = teaching.find((s) => s.id === subjectId) ?? null
       setSubject(meta)
       if (!meta) {
-        setLoadError('Энэ хичээлийг таны профайлд оруулаагүй эсвэл каталогт алга.')
+        setLoadError('Энэ хичээл таны профайлын жагсаалтад байхгүй.')
         return
       }
       setSlots(allSlots.filter((x) => x.courseSubjectId === subjectId).sort((a, b) => a.startTime.localeCompare(b.startTime)))
@@ -308,12 +309,12 @@ export default function TeacherSubjectPage() {
           </span>
           <span>Тест үүсгэх</span>
         </button>
-        <Link to="/teacher/profile" className="quickActionBtn quickActionLink">
-          <span className="quickActionIcon" aria-hidden>
-            👤
-          </span>
-          <span>Профайл засах</span>
-        </Link>
+        {/*<Link to="/teacher/profile" className="quickActionBtn quickActionLink">*/}
+        {/*  <span className="quickActionIcon" aria-hidden>*/}
+        {/*    👤*/}
+        {/*  </span>*/}
+        {/*  <span>Профайл засах</span>*/}
+        {/*</Link>*/}
       </section>
 
       <section className="subjectSection">
@@ -446,6 +447,7 @@ export default function TeacherSubjectPage() {
             Файл
             <input type="file" onChange={(e) => setMatFile(e.target.files?.[0] ?? null)} />
           </label>
+          <FileUploadPreview file={matFile} />
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
             <button type="button" className="btnGhost" onClick={() => setMaterialModalOpen(false)}>
               Цуцлах

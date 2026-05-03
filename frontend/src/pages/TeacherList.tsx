@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
+import { TeacherAvatar } from '../components/TeacherAvatar'
 import type { CourseSubject, TeacherSummary } from '../auth/types'
 
 export default function TeacherListPage() {
@@ -85,7 +86,9 @@ export default function TeacherListPage() {
 
       <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
         {teachers.map((teacher) => (
-          <article key={teacher.id} className="card">
+          <article key={teacher.id} className="card teacherListRow">
+            <TeacherAvatar url={teacher.avatarUrl} name={teacher.fullName} size="sm" />
+            <div className="teacherListRowBody">
             <h3 style={{ marginTop: 0 }}>{teacher.fullName}</h3>
             <p className="muted">{teacher.headline ?? 'Танилцуулга оруулаагүй'}</p>
             <p>
@@ -107,6 +110,7 @@ export default function TeacherListPage() {
                 : '—'}
             </p>
             <Link to={`/teachers/${teacher.id}`}>Дэлгэрэнгүй</Link>
+            </div>
           </article>
         ))}
         {!teachers.length && !isLoading ? <div className="muted">Илэрц олдсонгүй.</div> : null}

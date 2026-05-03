@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, fetchJson, postFormData } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
+import { FileUploadPreview } from '../components/FileUploadPreview'
 import type { CourseSubject, TeachingMaterial } from '../auth/types'
 
 function pickCourseSubjectId(teaching: CourseSubject[], rawParam: string | null): number | '' {
@@ -102,7 +103,7 @@ export default function TeacherMaterialsPage() {
     <div className="page">
       <h1>Хичээлийн материал</h1>
       <p className="muted">
-        Cloudinary тохируулсан үед файл серверээр дамжин үүлэнд хадгалагдана. Материал нэг каталогийн хичээлд холбогдоно; тухайн хичээлээр баталгаажсан захиалгатай сурагчид л линк харна.
+        Cloudinary тохируулсан үед файл серверээр дамжин үүлэнд хадгалагдана. Материал нэг тодорхой хичээлд холбогдоно; тухайн хичээлээр баталгаажсан захиалгатай сурагчид л линк харна.
       </p>
 
       {error ? <div className="error">{error}</div> : null}
@@ -111,7 +112,7 @@ export default function TeacherMaterialsPage() {
       {!subjects.length ? (
         <div className="card" style={{ marginBottom: 12 }}>
           <p className="muted">
-            Таны зааж буй хичээл (каталогтой таарсан) алга. <Link to="/teacher/profile">Профайл</Link> дээр хичээлийн нэрээ оруулна уу.
+            Таны зааж буй хичээл алга. <Link to="/teacher/profile">Профайл</Link> дээр заах хичээлүүдээ оруулна уу.
           </p>
         </div>
       ) : null}
@@ -129,7 +130,7 @@ export default function TeacherMaterialsPage() {
           </div>
         ) : (
           <label>
-            Хичээл (таны профайл + каталог)
+            Хичээл (таны профайл)
             <select
               value={courseSubjectId}
               onChange={(e) => setCourseSubjectId(e.target.value ? Number(e.target.value) : '')}
@@ -156,6 +157,7 @@ export default function TeacherMaterialsPage() {
           Файл
           <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
+        <FileUploadPreview file={file} />
         <button type="submit">Байршуулах</button>
       </form>
 

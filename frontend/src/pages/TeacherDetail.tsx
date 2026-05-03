@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
+import { TeacherAvatar } from '../components/TeacherAvatar'
 import type { AvailabilitySlot, Booking, QuizSummary, ReviewItem, TeacherDetail, TeachingMaterial } from '../auth/types'
 
 function formatIsoDate(value: string) {
@@ -160,9 +161,16 @@ export default function TeacherDetailPage() {
 
   return (
     <div className="page">
-      <h1>{teacher.fullName}</h1>
+      <div className="teacherDetailHeader">
+        <TeacherAvatar url={teacher.avatarUrl} name={teacher.fullName} size="lg" />
+        <div className="teacherDetailHeaderText">
+          <h1 style={{ marginTop: 0 }}>{teacher.fullName}</h1>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {teacher.headline ?? 'Товч танилцуулга байхгүй'}
+          </p>
+        </div>
+      </div>
       <div className="card" style={{ marginBottom: 12 }}>
-        <p className="muted">{teacher.headline ?? 'Товч танилцуулга байхгүй'}</p>
         <p>{teacher.bio ?? 'Дэлгэрэнгүй танилцуулга оруулаагүй.'}</p>
         <p><strong>Хичээл:</strong> {(teacher.subjects ?? []).join(', ') || '-'}</p>
         <p><strong>Ур чадвар:</strong> {(teacher.skills ?? []).join(', ') || '-'}</p>

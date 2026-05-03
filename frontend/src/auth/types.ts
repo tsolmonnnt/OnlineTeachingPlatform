@@ -35,6 +35,7 @@ export type TeacherSummary = {
   userId: number
   fullName: string
   headline: string | null
+  avatarUrl: string | null
   subjects: string[]
   skills: string[]
   hourlyRate: string | number | null

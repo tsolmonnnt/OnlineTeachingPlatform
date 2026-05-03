@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, fetchJson } from '../lib/api'
+import { ApiError, fetchJson, postFormData } from '../lib/api'
 import type { TeacherProfile } from '../auth/types'
 
 function splitCsv(input: string): string[] {
@@ -30,6 +30,11 @@ export default function TeacherProfilePage() {
   const [phone, setPhone] = useState('')
   const [yearsExperience, setYearsExperience] = useState('')
 
+  const [avatarPick, setAvatarPick] = useState<File | null>(null)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [avatarUploadMsg, setAvatarUploadMsg] = useState<string | null>(null)
+
   const payload = useMemo(() => {
     return {
       headline: headline.trim() || null,
@@ -55,6 +60,16 @@ export default function TeacherProfilePage() {
     phone,
     yearsExperience,
   ])
+
+  useEffect(() => {
+    if (!avatarPick) {
+      setAvatarPreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(avatarPick)
+    setAvatarPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [avatarPick])
 
   useEffect(() => {
     ;(async () => {
@@ -100,6 +115,32 @@ export default function TeacherProfilePage() {
     }
   }
 
+  async function onUploadAvatar() {
+    if (!avatarPick) {
+      setError('Эхлээд зураг сонгоно уу')
+      return
+    }
+    setError(null)
+    setAvatarUploadMsg(null)
+    setIsUploadingAvatar(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', avatarPick)
+      const saved = await postFormData<TeacherProfile>('/api/teachers/me/avatar', fd)
+      setProfile(saved)
+      setAvatarUrl(saved.avatarUrl ?? '')
+      setAvatarPick(null)
+      setAvatarUploadMsg('Зураг амжилттай ачаалагдлаа.')
+    } catch (err) {
+      if (err instanceof ApiError) setError(err.message)
+      else setError('Зураг ачаалахад алдаа гарлаа')
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
+  const shownAvatarSrc = avatarPreviewUrl || avatarUrl.trim() || profile?.avatarUrl || ''
+
   if (isLoading) {
     return (
       <div className="page">
@@ -129,16 +170,67 @@ export default function TeacherProfilePage() {
           Танилцуулга
           <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={5} maxLength={2000} />
         </label>
-        <label>
-          Зурагны холбоос (URL)
-          <input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
-        </label>
+
+        <div className="avatarUploadBlock">
+          <p className="muted small" style={{ margin: '0 0 8px' }}>
+            Профайл зураг (Cloudinary — profiles хавтас). Сонгоход урьдчилан харагдана.
+          </p>
+          {shownAvatarSrc ? (
+            <div className="avatarPreviewWrap">
+              <img className="avatarPreviewImg" src={shownAvatarSrc} alt="Профайл зураг" />
+            </div>
+          ) : (
+            <div className="avatarPreviewPlaceholder muted small">Зураг сонгоогүй байна</div>
+          )}
+          <label>
+            Зураг сонгох
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                setAvatarUploadMsg(null)
+                const f = e.target.files?.[0] ?? null
+                setAvatarPick(f)
+              }}
+            />
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <button type="button" disabled={!avatarPick || isUploadingAvatar} onClick={() => void onUploadAvatar()}>
+              {isUploadingAvatar ? 'Ачаалж байна…' : 'Зургийг серверт ачаалах'}
+            </button>
+            {avatarPick ? (
+              <button
+                type="button"
+                className="linkButton"
+                onClick={() => {
+                  setAvatarPick(null)
+                  setAvatarUploadMsg(null)
+                }}
+              >
+                Сонголтыг цуцлах
+              </button>
+            ) : null}
+          </div>
+          {avatarUploadMsg ? <p className="muted small" style={{ margin: 0 }}>{avatarUploadMsg}</p> : null}
+        </div>
+
+        {/*<label>*/}
+        {/*  Эсвэл зургийн URL (сонголттой)*/}
+        {/*  <input*/}
+        {/*    value={avatarUrl}*/}
+        {/*    onChange={(e) => setAvatarUrl(e.target.value)}*/}
+        {/*    placeholder="https://…"*/}
+        {/*  />*/}
+        {/*</label>*/}
 
         <h2>Мэргэжлийн мэдээлэл</h2>
         <label>
           Заах хичээлүүд (таслалаар тусгаарлана)
           <input value={subjectsCsv} onChange={(e) => setSubjectsCsv(e.target.value)} />
         </label>
+        <p className="muted small" style={{ margin: '-4px 0 0' }}>
+          Өөрийн хичээлийн нэрээ чөлөөтэй бичнэ; хадгалахад систем хичээлийн жагсаалтад автоматаар бүртгэнэ.
+        </p>
         <label>
           Ур чадварууд (таслалаар тусгаарлана)
           <input value={skillsCsv} onChange={(e) => setSkillsCsv(e.target.value)} />

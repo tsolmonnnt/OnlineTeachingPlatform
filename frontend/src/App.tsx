@@ -16,6 +16,7 @@ import TeacherQuizzesPage from './pages/TeacherQuizzes'
 import TeacherSchedulePage from './pages/TeacherSchedule'
 import MyCoursesPage from './pages/MyCourses'
 import TeacherSubjectPage from './pages/TeacherSubjectPage'
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 function App() {
   const { user, logout } = useAuth()
@@ -34,17 +35,10 @@ function App() {
               {user.role === 'TEACHER' || user.role === 'STUDENT' ? (
                 <Link to="/my-courses">Миний хичээлүүд</Link>
               ) : null}
-              {user.role === 'TEACHER' ? (
-                <>
-                  <Link to="/teacher/profile">Профайл</Link>
-                  <Link to="/teacher/schedule">Хуваарь</Link>
-                  <Link to="/teacher/materials">Материал</Link>
-                  <Link to="/teacher/quizzes">Тест</Link>
-                </>
-              ) : null}
+              {user.role === 'TEACHER' ? <Link to="/teacher/profile">Профайл</Link> : null}
               {user.role === 'ADMIN' ? <Link to="/admin">Админ</Link> : null}
               <Link to="/bookings">Захиалгууд</Link>
-              <Link to="/notifications">Мэдэгдэл</Link>
+              <Link to="/notifications"><NotificationsIcon/></Link>
               <button className="linkButton" onClick={logout}>
                 Гарах
               </button>

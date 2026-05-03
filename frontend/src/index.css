@@ -515,3 +515,117 @@ button:disabled {
 .modalForm {
   gap: 14px;
 }
+
+.avatarUploadBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avatarPreviewWrap {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.avatarPreviewImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatarPreviewPlaceholder {
+  padding: 24px;
+  border: 1px dashed rgba(15, 23, 42, 0.2);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.filePreviewBox {
+  margin-top: 4px;
+}
+
+.filePreviewImg {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.teacherListRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.teacherListRowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.teacherDetailHeader {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.teacherDetailHeaderText {
+  flex: 1;
+  min-width: 200px;
+}
+
+.teacherAvatarImg {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  flex-shrink: 0;
+  display: block;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.teacherAvatar-sm {
+  width: 52px;
+  height: 52px;
+}
+
+.teacherAvatar-md {
+  width: 80px;
+  height: 80px;
+}
+
+.teacherAvatar-lg {
+  width: 112px;
+  height: 112px;
+}
+
+.teacherAvatarFallback {
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #475569;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(232, 121, 249, 0.2) 100%);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.teacherAvatar-sm.teacherAvatarFallback {
+  font-size: 1.1rem;
+}
+
+.teacherAvatar-md.teacherAvatarFallback {
+  font-size: 1.35rem;
+}
+
+.teacherAvatar-lg.teacherAvatarFallback {
+  font-size: 2rem;
+}

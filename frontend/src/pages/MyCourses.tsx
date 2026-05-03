@@ -191,8 +191,8 @@ export default function MyCoursesPage() {
           {!teacherSubjects.length ? (
             <div className="card">
               <p className="muted">
-                Таны профайлд каталогтой таарах хичээл алга.{' '}
-                <Link to="/teacher/profile">Профайл</Link> хэсэгт каталогийн хичээлийн нэрийг (яг адилхан) оруулна уу.
+                Зааж буй хичээлийн нэрээ оруулаагүй байна.{' '}
+                <Link to="/teacher/profile">Профайл</Link> дээр хичээлүүдийн жагсаалтаа (таслалаар) бичнэ үү.
               </p>
             </div>
           ) : (
