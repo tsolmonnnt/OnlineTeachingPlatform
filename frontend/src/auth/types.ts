@@ -87,6 +87,13 @@ export type TeachingMaterial = {
   createdAt: string
 }
 
+export type PublicPlatformStats = {
+  verifiedTeacherCount: number
+  totalBookings: number
+  studentCount: number
+  totalTeachers: number
+}
+
 export type AdminStats = {
   totalUsers: number
   studentCount: number
@@ -175,6 +182,24 @@ export type Booking = {
   courseSubjectName: string | null
   createdAt: string
   updatedAt: string
+}
+
+export type TeacherDashboard = {
+  confirmedLessonsToday: number
+  confirmedLessonsTomorrow: number
+  pendingBookingsAsTeacher: number
+  averageRating: number | null
+  reviewCount: number
+  unreadNotifications: number
+  uniqueStudentsConfirmed: number
+  recentBookings: Booking[]
+}
+
+export type StudentDashboard = {
+  upcomingConfirmedLessons: number
+  pendingBookingsAsStudent: number
+  unreadNotifications: number
+  recentBookings: Booking[]
 }
 
 export type NotificationItem = {

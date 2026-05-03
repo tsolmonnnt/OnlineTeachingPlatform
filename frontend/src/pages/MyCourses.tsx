@@ -36,13 +36,13 @@ function groupConfirmedBookings(bookings: Booking[]): EnrolledCourseCard[] {
 
 function CourseThumb({ seed }: { seed: number }) {
   const h = ((seed * 17) % 360 + 360) % 360
-  const h2 = ((seed * 31 + 40) % 360 + 360) % 360
   return (
     <div
+      className="courseThumb"
       style={{
         height: 120,
         borderRadius: '12px 12px 0 0',
-        background: `linear-gradient(135deg, hsl(${h}, 70%, 55%) 0%, hsl(${h2}, 65%, 50%) 55%, hsl(${(h + 180) % 360}, 55%, 45%) 100%)`,
+        background: `hsl(${h}, 38%, 42%)`,
       }}
     />
   )
@@ -132,30 +132,15 @@ export default function MyCoursesPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 960 }}>
-      <div
-        style={{
-          marginBottom: 20,
-          padding: '12px 16px',
-          borderRadius: 12,
-          background: 'linear-gradient(90deg, rgba(234, 179, 8, 0.95) 0%, rgba(250, 204, 21, 0.85) 100%)',
-          color: '#fff',
-          fontWeight: 700,
-          fontSize: 22,
-          letterSpacing: '-0.02em',
-        }}
-      >
-        Миний хичээлүүд
-      </div>
+    <div className="page pageWide">
+      <div className="pageHeader">Миний хичээлүүд</div>
 
       {error ? <div className="error">{error}</div> : null}
 
       {user.role === 'TEACHER' ? (
         <>
           <div className="card" style={{ marginBottom: 16 }}>
-            <h2 style={{ margin: '0 0 12px', fontSize: 18, borderBottom: '2px solid rgba(234, 179, 8, 0.8)', paddingBottom: 8 }}>
-              Хичээлийн жагсаалт
-            </h2>
+            <h2 className="sectionTitleUnderline">Хичээлийн жагсаалт</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 12 }}>
               <label className="muted small" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 Ангилал

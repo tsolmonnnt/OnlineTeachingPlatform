@@ -42,7 +42,11 @@ export default function TeacherSchedulePage() {
   }
 
   useEffect(() => {
-    void load()
+    const task = () => {
+      void load()
+    }
+    const id = setTimeout(task, 0)
+    return () => clearTimeout(id)
   }, [searchParams])
 
   const rawUrl = searchParams.get('courseSubjectId')
@@ -160,7 +164,7 @@ export default function TeacherSchedulePage() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button type="submit">{editingSlotId != null ? 'Шинэчлэх' : 'Слот нэмэх'}</button>
           {editingSlotId != null ? (
-            <button type="button" className="muted" onClick={cancelEdit}>
+            <button type="button" className="btnGhost" onClick={cancelEdit}>
               Цуцлах
             </button>
           ) : null}
