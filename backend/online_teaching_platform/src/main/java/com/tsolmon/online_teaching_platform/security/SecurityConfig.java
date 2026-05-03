@@ -37,7 +37,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/stats").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard/teacher").hasRole("TEACHER")
+                        .requestMatchers(HttpMethod.GET, "/api/dashboard/student").hasRole("STUDENT")
 
                         .requestMatchers(HttpMethod.POST, "/api/teachers/me/avatar").hasRole("TEACHER")
                         .requestMatchers("/api/teachers/me").hasRole("TEACHER")
