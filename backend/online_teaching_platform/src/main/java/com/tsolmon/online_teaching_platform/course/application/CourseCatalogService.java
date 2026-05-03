@@ -3,6 +3,7 @@ package com.tsolmon.online_teaching_platform.course.application;
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
 import com.tsolmon.online_teaching_platform.course.api.dto.CourseCategoryResponse;
 import com.tsolmon.online_teaching_platform.course.api.dto.CourseSubjectResponse;
+import com.tsolmon.online_teaching_platform.course.domain.CourseCategory;
 import com.tsolmon.online_teaching_platform.course.domain.CourseCategoryRepository;
 import com.tsolmon.online_teaching_platform.course.domain.CourseSubject;
 import com.tsolmon.online_teaching_platform.course.domain.CourseSubjectRepository;
@@ -22,6 +23,9 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class CourseCatalogService {
+    /** Category for subjects created from teacher profile names (optional sync with global catalog). */
+    public static final String TEACHER_SUBJECT_CATEGORY_NAME = "Багшын хичээл";
+
     private final CourseCategoryRepository categoryRepository;
     private final CourseSubjectRepository subjectRepository;
     private final TeacherRepository teacherRepository;
@@ -46,24 +50,66 @@ public class CourseCatalogService {
     }
 
     /**
-     * Catalog subjects that match the current teacher's profile subject list (same name matching as schedule/material/quiz validation).
+     * For each non-empty subject label, ensures a {@link CourseSubject} exists (creates under {@link #TEACHER_SUBJECT_CATEGORY_NAME} if missing).
+     * Teachers name subjects freely in their profile; rows appear in the catalog for booking/material/quiz linkage.
      */
-    @Transactional(readOnly = true)
+    @Transactional
+    public void ensureSubjectsExistForStrings(List<String> subjectStrings) {
+        if (subjectStrings == null || subjectStrings.isEmpty()) {
+            return;
+        }
+        CourseCategory bucket = ensureTeacherSubjectCategory();
+        for (String entry : subjectStrings) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+            String name = trimSubjectName(entry.trim());
+            if (subjectRepository.findByNameIgnoreCase(name).isPresent()) {
+                continue;
+            }
+            CourseSubject cs = new CourseSubject();
+            cs.setName(name);
+            cs.setDescription(null);
+            cs.setCategory(bucket);
+            subjectRepository.save(cs);
+        }
+    }
+
+    /**
+     * Subjects for the current teacher: profile labels, each backed by a catalog row (created on demand).
+     */
+    @Transactional
     public List<CourseSubjectResponse> getTeachingSubjects(AuthUser authUser) {
         TeacherProfile teacher = teacherRepository.findByUser_Id(authUser.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teacher profile not found"));
+        ensureSubjectsExistForStrings(teacher.getSubjects());
         Map<Long, CourseSubject> byId = new LinkedHashMap<>();
         for (String entry : teacher.getSubjects()) {
             if (entry == null || entry.isBlank()) {
                 continue;
             }
-            String trimmed = entry.trim();
+            String trimmed = trimSubjectName(entry.trim());
             subjectRepository.findByNameIgnoreCase(trimmed).ifPresent(cs -> byId.putIfAbsent(cs.getId(), cs));
         }
         return byId.values().stream()
                 .sorted(Comparator.comparing(CourseSubject::getName, String.CASE_INSENSITIVE_ORDER))
                 .map(CourseSubjectResponse::from)
                 .toList();
+    }
+
+    private CourseCategory ensureTeacherSubjectCategory() {
+        return categoryRepository.findByNameIgnoreCase(TEACHER_SUBJECT_CATEGORY_NAME)
+                .orElseGet(() -> {
+                    CourseCategory c = new CourseCategory();
+                    c.setName(TEACHER_SUBJECT_CATEGORY_NAME);
+                    c.setDescription("Багшийн оруулсан хичээлийн нэрүүд");
+                    return categoryRepository.save(c);
+                });
+    }
+
+    private static String trimSubjectName(String name) {
+        int max = 120;
+        return name.length() <= max ? name : name.substring(0, max);
     }
 }
 

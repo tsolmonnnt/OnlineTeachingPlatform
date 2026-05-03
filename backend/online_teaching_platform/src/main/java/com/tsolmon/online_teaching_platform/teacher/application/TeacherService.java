@@ -1,6 +1,9 @@
 package com.tsolmon.online_teaching_platform.teacher.application;
 
+import com.cloudinary.Cloudinary;
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
+import com.tsolmon.online_teaching_platform.course.application.CourseCatalogService;
+import com.tsolmon.online_teaching_platform.material.infrastructure.CloudinaryProperties;
 import com.tsolmon.online_teaching_platform.review.domain.ReviewRepository;
 import com.tsolmon.online_teaching_platform.schedule.domain.TeacherAvailabilityRepository;
 import com.tsolmon.online_teaching_platform.teacher.api.dto.TeacherDetailResponse;
@@ -13,20 +16,29 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class TeacherService {
+    private static final long MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
     private final TeacherRepository teacherRepository;
     private final TeacherAvailabilityRepository availabilityRepository;
     private final ReviewRepository reviewRepository;
+    private final CourseCatalogService courseCatalogService;
+    private final Cloudinary cloudinary;
+    private final CloudinaryProperties cloudinaryProperties;
 
     @Transactional(readOnly = true)
     public TeacherProfileResponse getMyProfile(AuthUser authUser) {
@@ -53,7 +65,58 @@ public class TeacherService {
         profile.setLanguages(request.languages() == null ? new ArrayList<>() : new ArrayList<>(request.languages()));
 
         TeacherProfile saved = teacherRepository.save(profile);
+        courseCatalogService.ensureSubjectsExistForStrings(saved.getSubjects());
         return TeacherProfileResponse.from(saved);
+    }
+
+    /**
+     * Uploads a profile image to Cloudinary (folder {@link CloudinaryProperties#effectiveProfileFolder()})
+     * and stores {@code secure_url} on the teacher profile.
+     */
+    @Transactional
+    public TeacherProfileResponse uploadAvatar(AuthUser authUser, MultipartFile file) {
+        if (!cloudinaryProperties.isConfigured()) {
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Image upload is not configured (set CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET)"
+            );
+        }
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is required");
+        }
+        if (file.getSize() > MAX_AVATAR_BYTES) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Image too large (max 5MB)");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An image file is required");
+        }
+
+        TeacherProfile profile = teacherRepository.findByUser_Id(authUser.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Teacher profile not found"));
+
+        try {
+            Map<String, Object> uploadOptions = new HashMap<>();
+            uploadOptions.put("folder", cloudinaryProperties.effectiveProfileFolder());
+            uploadOptions.put("resource_type", "image");
+            uploadOptions.put("overwrite", Boolean.FALSE);
+            String preset = cloudinaryProperties.effectiveProfileUploadPreset();
+            if (!preset.isBlank()) {
+                uploadOptions.put("upload_preset", preset);
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadOptions);
+            String secureUrl = (String) uploadResult.get("secure_url");
+            if (secureUrl == null || secureUrl.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upload did not return a URL");
+            }
+            profile.setAvatarUrl(secureUrl);
+            TeacherProfile saved = teacherRepository.save(profile);
+            return TeacherProfileResponse.from(saved);
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Could not upload image", e);
+        }
     }
 
     @Transactional(readOnly = true)

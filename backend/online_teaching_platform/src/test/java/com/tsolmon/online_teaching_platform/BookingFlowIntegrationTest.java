@@ -53,8 +53,16 @@ class BookingFlowIntegrationTest {
         String body = exchange("GET", "/api/course/subjects/teaching", teacherToken, null);
         JsonNode arr = objectMapper.readTree(body);
         assertThat(arr.isArray()).isTrue();
-        assertThat(arr.size()).isEqualTo(1);
-        assertThat(arr.get(0).get("name").asText()).isEqualTo("Java");
+        assertThat(arr.size()).isEqualTo(2);
+        boolean hasJava = false;
+        boolean hasCustom = false;
+        for (JsonNode el : arr) {
+            String n = el.get("name").asText();
+            if ("Java".equals(n)) hasJava = true;
+            if ("NonexistentSubjectXYZ".equals(n)) hasCustom = true;
+        }
+        assertThat(hasJava).isTrue();
+        assertThat(hasCustom).isTrue();
 
         assertThat(exchangeStatus("GET", "/api/course/subjects/teaching", studentToken, null)).isEqualTo(403);
     }

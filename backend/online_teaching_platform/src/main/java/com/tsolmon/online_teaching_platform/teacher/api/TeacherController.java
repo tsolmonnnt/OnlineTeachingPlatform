@@ -9,7 +9,9 @@ import com.tsolmon.online_teaching_platform.teacher.application.TeacherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +35,15 @@ public class TeacherController {
     ) {
         AuthUser authUser = (AuthUser) authentication.getPrincipal();
         return teacherService.updateMyProfile(authUser, request);
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TeacherProfileResponse uploadAvatar(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file
+    ) {
+        AuthUser authUser = (AuthUser) authentication.getPrincipal();
+        return teacherService.uploadAvatar(authUser, file);
     }
 
     @GetMapping

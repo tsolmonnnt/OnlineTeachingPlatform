@@ -23,11 +23,13 @@ server:
   port: 8080
 
 cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dwfb98ftt}
   api-key: ${CLOUDINARY_API_KEY:}
   api-secret: ${CLOUDINARY_API_SECRET:}
   folder: ${CLOUDINARY_FOLDER:subjectFiles}
   upload-preset: ${CLOUDINARY_UPLOAD_PRESET:}
+  profile-folder: ${CLOUDINARY_PROFILE_FOLDER:profiles}
+  profile-upload-preset: ${CLOUDINARY_PROFILE_UPLOAD_PRESET:}
 
 security:
   jwt:
