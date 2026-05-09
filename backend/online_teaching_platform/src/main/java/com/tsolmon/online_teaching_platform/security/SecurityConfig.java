@@ -94,7 +94,7 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
-            throw new UsernameNotFoundException("Username/password auth disabled (use JWT)");
+            throw new UsernameNotFoundException("Username/password auth disabled (use  JWT)");
         };
     }
 
