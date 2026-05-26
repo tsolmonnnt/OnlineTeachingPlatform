@@ -16,7 +16,10 @@ final class DotEnvBootstrap {
     }
 
     static void load() {
-        Path cwd = Path.of("").toAbsolutePath().normalize();
+        load(Path.of("").toAbsolutePath().normalize());
+    }
+
+    static void load(Path cwd) {
         // Cover: module dir, parent `backend`, repo root (see README IntelliJ working directory).
         Path[] candidates = new Path[]{
                 cwd.resolve(".env"),

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
+import { datetimeLocalInputToApi } from '../lib/datetime'
 import { TeacherAvatar } from '../components/TeacherAvatar'
 import type { CourseSubject, TeacherSummary } from '../auth/types'
 
@@ -34,7 +35,7 @@ export default function TeacherListPage() {
       if (query.trim()) params.set('query', query.trim())
       if (subject.trim()) params.set('subject', subject.trim())
       if (skill.trim()) params.set('skill', skill.trim())
-      if (availableAfter) params.set('availableAfter', new Date(availableAfter).toISOString().slice(0, 19))
+      if (availableAfter) params.set('availableAfter', datetimeLocalInputToApi(availableAfter))
 
       const result = await fetchJson<TeacherSummary[]>(`/api/teachers?${params.toString()}`, { method: 'GET' })
       setTeachers(result)

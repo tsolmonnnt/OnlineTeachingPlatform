@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, fetchJson, postFormData } from '../lib/api'
+import {
+  apiDateTimeToDatetimeLocalValue,
+  datetimeLocalInputToApi,
+  parseLocalDateTime,
+} from '../lib/datetime'
 import { FileUploadPreview } from '../components/FileUploadPreview'
 import { Modal } from '../components/Modal'
 import type { AvailabilitySlot, CourseSubject, QuizSummary, TeachingMaterial } from '../auth/types'
@@ -24,18 +29,12 @@ function CalendarIcon() {
 }
 
 function formatSlotCard(slot: AvailabilitySlot) {
-  const start = new Date(slot.startTime)
-  const end = new Date(slot.endTime)
+  const start = parseLocalDateTime(slot.startTime)
+  const end = parseLocalDateTime(slot.endTime)
   const day = start.toLocaleDateString('mn-MN', { weekday: 'long' })
   const t1 = start.toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit', hour12: false })
   const t2 = end.toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit', hour12: false })
   return { day, range: `${t1} – ${t2}` }
-}
-
-function toDatetimeLocalValue(iso: string) {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 export default function TeacherSubjectPage() {
@@ -108,7 +107,7 @@ export default function TeacherSubjectPage() {
   function openEditSlot(slot: AvailabilitySlot) {
     if (slot.booked) return
     setEditingSlotId(slot.id)
-    setSlotStartTime(toDatetimeLocalValue(slot.startTime))
+    setSlotStartTime(apiDateTimeToDatetimeLocalValue(slot.startTime))
     setSlotModalOpen(true)
   }
 
@@ -120,7 +119,7 @@ export default function TeacherSubjectPage() {
       return
     }
     const payload = JSON.stringify({
-      startTime: new Date(slotStartTime).toISOString().slice(0, 19),
+      startTime: datetimeLocalInputToApi(slotStartTime),
       courseSubjectId: subjectId,
     })
     try {

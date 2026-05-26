@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
+import { dateToApiLocalDateTime, formatLocalDateTime } from '../lib/datetime'
 import { useAuth } from '../auth/AuthContext'
 import { TeacherAvatar } from '../components/TeacherAvatar'
 import type { AvailabilitySlot, Booking, QuizSummary, ReviewItem, TeacherDetail, TeachingMaterial } from '../auth/types'
-
-function formatIsoDate(value: string) {
-  return new Date(value).toLocaleString('mn-MN')
-}
 
 export default function TeacherDetailPage() {
   const { teacherId } = useParams()
@@ -58,8 +55,8 @@ export default function TeacherDetailPage() {
         const from = new Date()
         const to = new Date()
         to.setDate(to.getDate() + 21)
-        const fromParam = from.toISOString().slice(0, 19)
-        const toParam = to.toISOString().slice(0, 19)
+        const fromParam = dateToApiLocalDateTime(from)
+        const toParam = dateToApiLocalDateTime(to)
         const schedule = await fetchJson<AvailabilitySlot[]>(
           `/api/schedules/teacher/${activeTeacherId}?from=${fromParam}&to=${toParam}`,
           { method: 'GET' },
@@ -234,7 +231,7 @@ export default function TeacherDetailPage() {
           <div style={{ display: 'grid', gap: 8 }}>
             {reviews.map((r) => (
               <div key={r.id} className="muted">
-                <strong>{r.studentName}</strong> — {r.rating}★ · {formatIsoDate(r.createdAt)}
+                <strong>{r.studentName}</strong> — {r.rating}★ · {formatLocalDateTime(r.createdAt)}
                 {r.comment ? <div>{r.comment}</div> : null}
               </div>
             ))}
@@ -255,7 +252,7 @@ export default function TeacherDetailPage() {
                 <option value="">Сонгох</option>
                 {reviewableBookings.map((b) => (
                   <option key={b.id} value={b.id}>
-                    #{b.id} — {b.courseSubjectName ?? b.subject} — {formatIsoDate(b.slotStartTime)}
+                    #{b.id} — {b.courseSubjectName ?? b.subject} — {formatLocalDateTime(b.slotStartTime)}
                   </option>
                 ))}
               </select>
@@ -293,7 +290,7 @@ export default function TeacherDetailPage() {
               <option value="">Сонгох</option>
               {selectableSlots.map((slot) => (
                 <option key={slot.id} value={slot.id}>
-                  {slot.courseSubjectName ?? 'Хичээл'} · {formatIsoDate(slot.startTime)} – {formatIsoDate(slot.endTime)}
+                  {slot.courseSubjectName ?? 'Хичээл'} · {formatLocalDateTime(slot.startTime)} – {formatLocalDateTime(slot.endTime)}
                 </option>
               ))}
             </select>

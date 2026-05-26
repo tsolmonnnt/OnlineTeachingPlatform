@@ -11,7 +11,8 @@ class DotEnvBootstrapTest {
 
     @Test
     void loadUsesFirstExistingCandidateWithoutOverridingEnvironmentOrSystemProperties() throws Exception {
-        Path nestedDirectory = Path.of("online_teaching_platform");
+        Path tempRoot = Files.createTempDirectory("dotenv-bootstrap-test");
+        Path nestedDirectory = tempRoot.resolve("online_teaching_platform");
         Path envFile = nestedDirectory.resolve(".env");
         String newKey = "DOTENV_BOOTSTRAP_TEST_NEW";
         String existingKey = "DOTENV_BOOTSTRAP_TEST_EXISTING";
@@ -27,7 +28,7 @@ class DotEnvBootstrapTest {
         System.setProperty(existingKey, "from-system-property");
 
         try {
-            DotEnvBootstrap.load();
+            DotEnvBootstrap.load(tempRoot);
 
             assertThat(System.getProperty(newKey)).isEqualTo("from-file");
             assertThat(System.getProperty(existingKey)).isEqualTo("from-system-property");
@@ -37,6 +38,7 @@ class DotEnvBootstrapTest {
             System.clearProperty(existingKey);
             Files.deleteIfExists(envFile);
             Files.deleteIfExists(nestedDirectory);
+            Files.deleteIfExists(tempRoot);
         }
     }
 }

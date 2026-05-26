@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
+import { apiDateTimeToDatetimeLocalValue, datetimeLocalInputToApi, formatLocalDateTime } from '../lib/datetime'
 import type { AvailabilitySlot, CourseSubject } from '../auth/types'
 
 function pickCourseSubjectId(teaching: CourseSubject[], rawParam: string | null): number | '' {
@@ -18,12 +19,6 @@ export default function TeacherSchedulePage() {
   const [startTime, setStartTime] = useState('')
   const [editingSlotId, setEditingSlotId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  function toDatetimeLocalValue(iso: string) {
-    const d = new Date(iso)
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  }
 
   async function load() {
     setError(null)
@@ -62,7 +57,7 @@ export default function TeacherSchedulePage() {
       return
     }
     const payload = JSON.stringify({
-      startTime: new Date(startTime).toISOString().slice(0, 19),
+      startTime: datetimeLocalInputToApi(startTime),
       courseSubjectId,
     })
     try {
@@ -94,7 +89,7 @@ export default function TeacherSchedulePage() {
     setEditingSlotId(slot.id)
     const sid = slot.courseSubjectId
     setCourseSubjectId(sid != null ? sid : (subjects[0]?.id ?? ''))
-    setStartTime(toDatetimeLocalValue(slot.startTime))
+    setStartTime(apiDateTimeToDatetimeLocalValue(slot.startTime))
   }
 
   function cancelEdit() {
@@ -179,7 +174,7 @@ export default function TeacherSchedulePage() {
             <p>
               <strong>{slot.courseSubjectName ?? '—'}</strong>
               {' · '}
-              {new Date(slot.startTime).toLocaleString('mn-MN')} – {new Date(slot.endTime).toLocaleString('mn-MN')}
+              {formatLocalDateTime(slot.startTime)} – {formatLocalDateTime(slot.endTime)}
             </p>
             <p><strong>Төлөв:</strong> {slot.booked ? 'Захиалагдсан' : 'Сул'}</p>
             {!slot.booked ? (

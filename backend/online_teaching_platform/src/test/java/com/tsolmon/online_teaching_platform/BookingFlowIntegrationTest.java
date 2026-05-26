@@ -84,7 +84,14 @@ class BookingFlowIntegrationTest {
 
         String teacherSearchBody = exchange("GET", "/api/teachers?query=java", null, null);
         JsonNode teacherArray = objectMapper.readTree(teacherSearchBody);
-        Long teacherId = teacherArray.get(0).get("id").asLong();
+        Long teacherId = null;
+        for (JsonNode teacher : teacherArray) {
+            if ("Teacher One".equals(teacher.get("fullName").asText())) {
+                teacherId = teacher.get("id").asLong();
+                break;
+            }
+        }
+        assertThat(teacherId).isNotNull();
 
         String subjectsBody = exchange("GET", "/api/course/subjects", null, null);
         JsonNode subjectsArr = objectMapper.readTree(subjectsBody);
