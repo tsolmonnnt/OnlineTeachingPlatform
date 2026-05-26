@@ -4,6 +4,7 @@ import com.tsolmon.online_teaching_platform.teacher.domain.TeacherProfile;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 public record TeacherSummaryResponse(
         Long id,
@@ -20,6 +21,13 @@ public record TeacherSummaryResponse(
         Double averageRating,
         long reviewCount
 ) {
+    private static List<String> copyList(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+        return values.stream().filter(Objects::nonNull).toList();
+    }
+
     public static TeacherSummaryResponse from(TeacherProfile profile, Double averageRating, long reviewCount) {
         return new TeacherSummaryResponse(
                 profile.getId(),
@@ -27,8 +35,8 @@ public record TeacherSummaryResponse(
                 profile.getUser().getFullName(),
                 profile.getHeadline(),
                 profile.getAvatarUrl(),
-                profile.getSubjects(),
-                profile.getSkills(),
+                copyList(profile.getSubjects()),
+                copyList(profile.getSkills()),
                 profile.getHourlyRate(),
                 profile.getYearsExperience(),
                 profile.getLocation(),
