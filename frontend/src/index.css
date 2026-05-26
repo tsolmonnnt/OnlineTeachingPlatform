@@ -261,6 +261,15 @@ button.quickActionBtn:hover:not(:disabled) {
   font-size: 14px;
 }
 
+.success {
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
 .footer {
   margin-top: auto;
   flex-shrink: 0;
@@ -905,6 +914,27 @@ a.quickActionBtn:hover {
   padding: 24px 16px;
   display: flex;
   justify-content: center;
+}
+
+.shellPageFrame {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.shellFlash {
+  width: min(100%, 720px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shellFlashClose {
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

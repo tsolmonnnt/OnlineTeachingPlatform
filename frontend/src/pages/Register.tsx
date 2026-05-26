@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ApiError } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
 import type { Role } from '../auth/types'
+import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 export default function RegisterPage() {
   const { register } = useAuth()
@@ -21,12 +21,12 @@ export default function RegisterPage() {
     setIsSubmitting(true)
     try {
       await register({ fullName, email, password, role })
-      if (role === 'TEACHER') navigate('/teacher/profile', { replace: true })
-      else if (role === 'ADMIN') navigate('/admin', { replace: true })
-      else navigate('/', { replace: true })
+      const flashState = { flashMessage: 'Бүртгэл амжилттай үүслээ.' }
+      if (role === 'TEACHER') navigate('/teacher/profile', { replace: true, state: flashState })
+      else if (role === 'ADMIN') navigate('/admin', { replace: true, state: flashState })
+      else navigate('/', { replace: true, state: flashState })
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Бүртгүүлэхэд алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Бүртгүүлэхэд алдаа гарлаа.'))
     } finally {
       setIsSubmitting(false)
     }

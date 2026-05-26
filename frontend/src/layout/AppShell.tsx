@@ -1,15 +1,41 @@
 import MenuIcon from '@mui/icons-material/Menu'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import CloseIcon from '@mui/icons-material/Close'
-import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+
+function getFlashMessage(state: unknown): string | null {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
+    return null
+  }
+
+  const flashMessage = (state as { flashMessage?: unknown }).flashMessage
+  return typeof flashMessage === 'string' && flashMessage.trim() ? flashMessage : null
+}
 
 export default function AppShell() {
   const { user, logout } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const closeSidebar = () => setSidebarOpen(false)
+  const flashMessage = getFlashMessage(location.state)
+
+  useEffect(() => {
+    if (!flashMessage) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void navigate(`${location.pathname}${location.search}${location.hash}`, {
+        replace: true,
+        state: null,
+      })
+    }, 4000)
+    return () => window.clearTimeout(timeoutId)
+  }, [flashMessage, location.hash, location.pathname, location.search, navigate])
 
   return (
     <div className="appShell">
@@ -199,7 +225,26 @@ export default function AppShell() {
 
         <div className="shellContentWrapper">
           <main className="shellMain">
-            <Outlet />
+            <div className="shellPageFrame">
+              {flashMessage ? (
+                <div className="success shellFlash">
+                  <span>{flashMessage}</span>
+                  <button
+                    type="button"
+                    className="linkButton shellFlashClose"
+                    onClick={() =>
+                      void navigate(`${location.pathname}${location.search}${location.hash}`, {
+                        replace: true,
+                        state: null,
+                      })
+                    }
+                  >
+                    Хаах
+                  </button>
+                </div>
+              ) : null}
+              <Outlet />
+            </div>
           </main>
 
           <footer className="footer shellFooter">

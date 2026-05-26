@@ -5,6 +5,9 @@ import com.tsolmon.online_teaching_platform.RequirementsIntegrationTestSupport;
 import com.tsolmon.online_teaching_platform.user.entity.User;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpResponse;
+import java.util.stream.StreamSupport;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AuthRequirementsIntegrationTest extends RequirementsIntegrationTestSupport {
@@ -44,13 +47,50 @@ class AuthRequirementsIntegrationTest extends RequirementsIntegrationTestSupport
                 }
                 """)).isEqualTo(401);
 
-        assertThat(exchangeStatus("POST", "/api/auth/register", null, """
+        HttpResponse<String> duplicateRegister = send("POST", "/api/auth/register", null, """
                 {
                   "fullName": "Duplicate Auth Case",
                   "email": "AUTHCASE@test.mn",
                   "password": "%s",
                   "role": "STUDENT"
                 }
-                """.formatted(PASSWORD))).isEqualTo(409);
+                """.formatted(PASSWORD));
+        assertThat(duplicateRegister.statusCode()).isEqualTo(409);
+
+        JsonNode duplicateError = objectMapper.readTree(duplicateRegister.body());
+        assertThat(duplicateError.get("code").asText()).isEqualTo("EMAIL_ALREADY_REGISTERED");
+        assertThat(duplicateError.get("message").asText()).isEqualTo("Email already registered");
+        assertThat(duplicateError.get("fieldErrors").isArray()).isTrue();
+    }
+
+    @Test
+    void registerValidationErrorsShouldReturnStructuredFieldErrors() throws Exception {
+        HttpResponse<String> invalidRegister = send("POST", "/api/auth/register", null, """
+                {
+                  "fullName": "",
+                  "email": "not-an-email",
+                  "password": "123",
+                  "role": "STUDENT"
+                }
+                """);
+
+        assertThat(invalidRegister.statusCode()).isEqualTo(400);
+
+        JsonNode error = objectMapper.readTree(invalidRegister.body());
+        assertThat(error.get("code").asText()).isEqualTo("VALIDATION_ERROR");
+        assertThat(error.get("message").asText()).isEqualTo("Validation failed");
+
+        JsonNode fieldErrors = error.get("fieldErrors");
+        assertThat(fieldErrors.isArray()).isTrue();
+
+        var fields = StreamSupport.stream(fieldErrors.spliterator(), false)
+                .map(node -> node.get("field").asText())
+                .toList();
+        var codes = StreamSupport.stream(fieldErrors.spliterator(), false)
+                .map(node -> node.get("code").asText())
+                .toList();
+
+        assertThat(fields).contains("fullName", "email", "password");
+        assertThat(codes).contains("REQUIRED", "INVALID_EMAIL", "PASSWORD_LENGTH");
     }
 }

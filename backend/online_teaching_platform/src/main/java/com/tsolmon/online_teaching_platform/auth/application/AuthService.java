@@ -12,6 +12,7 @@ import com.tsolmon.online_teaching_platform.user.api.dto.UserResponse;
 import com.tsolmon.online_teaching_platform.user.entity.User;
 import com.tsolmon.online_teaching_platform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,11 @@ public class AuthService {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(request.role());
-        userRepository.save(user);
+        try {
+            userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered", ex);
+        }
 
         if (user.getRole() == Role.TEACHER) {
             TeacherProfile profile = new TeacherProfile();

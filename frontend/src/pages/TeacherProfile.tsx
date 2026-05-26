@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, fetchJson, postFormData } from '../lib/api'
+import { fetchJson, postFormData } from '../lib/api'
 import type { TeacherProfile } from '../auth/types'
+import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 function splitCsv(input: string): string[] {
   return input
@@ -16,6 +17,7 @@ function joinCsv(list: string[] | null | undefined) {
 export default function TeacherProfilePage() {
   const [profile, setProfile] = useState<TeacherProfile | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -74,6 +76,7 @@ export default function TeacherProfilePage() {
   useEffect(() => {
     ;(async () => {
       setError(null)
+      setSuccess(null)
       setIsLoading(true)
       try {
         const p = await fetchJson<TeacherProfile>('/api/teachers/me', { method: 'GET' })
@@ -89,8 +92,7 @@ export default function TeacherProfilePage() {
         setPhone(p.phone ?? '')
         setYearsExperience(p.yearsExperience == null ? '' : String(p.yearsExperience))
       } catch (err) {
-        if (err instanceof ApiError) setError(err.message)
-        else setError('Профайл ачаалж чадсангүй')
+        setError(getFriendlyErrorMessage(err, 'Профайлыг ачаалж чадсангүй.'))
       } finally {
         setIsLoading(false)
       }
@@ -100,6 +102,7 @@ export default function TeacherProfilePage() {
   async function onSave(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     setIsSaving(true)
     try {
       const saved = await fetchJson<TeacherProfile>('/api/teachers/me', {
@@ -107,9 +110,9 @@ export default function TeacherProfilePage() {
         body: JSON.stringify(payload),
       })
       setProfile(saved)
+      setSuccess('Профайл амжилттай хадгалагдлаа.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Хадгалах үед алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Профайлыг хадгалах үед алдаа гарлаа.'))
     } finally {
       setIsSaving(false)
     }
@@ -121,6 +124,7 @@ export default function TeacherProfilePage() {
       return
     }
     setError(null)
+    setSuccess(null)
     setAvatarUploadMsg(null)
     setIsUploadingAvatar(true)
     try {
@@ -132,8 +136,7 @@ export default function TeacherProfilePage() {
       setAvatarPick(null)
       setAvatarUploadMsg('Зураг амжилттай ачаалагдлаа.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Зураг ачаалахад алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Зураг ачаалах үед алдаа гарлаа.'))
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -211,7 +214,11 @@ export default function TeacherProfilePage() {
               </button>
             ) : null}
           </div>
-          {avatarUploadMsg ? <p className="muted small" style={{ margin: 0 }}>{avatarUploadMsg}</p> : null}
+          {avatarUploadMsg ? (
+            <div className="success small" style={{ margin: 0 }}>
+              {avatarUploadMsg}
+            </div>
+          ) : null}
         </div>
 
         {/*<label>*/}
@@ -268,6 +275,7 @@ export default function TeacherProfilePage() {
           <input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={40} />
         </label>
 
+        {success ? <div className="success">{success}</div> : null}
         {error ? <div className="error">{error}</div> : null}
         <button disabled={isSaving} type="submit">
           {isSaving ? 'Хадгалж байна…' : 'Профайл хадгалах'}

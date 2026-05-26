@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ApiError } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
+import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -17,10 +17,9 @@ export default function LoginPage() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      navigate('/', { replace: true })
+      navigate('/', { replace: true, state: { flashMessage: 'Амжилттай нэвтэрлээ.' } })
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Нэвтрэхэд алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Нэвтрэхэд алдаа гарлаа.'))
     } finally {
       setIsSubmitting(false)
     }
