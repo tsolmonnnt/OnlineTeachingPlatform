@@ -1,0 +1,42 @@
+---
+description: OnlineTeachingPlatform monorepo — stack, API/security, HTTP client, language, thesis scope
+alwaysApply: true
+---
+
+# OnlineTeachingPlatform
+
+## Layout
+
+- **Frontend**: `frontend/` — React 19, Vite 7, TypeScript, `react-router-dom` v7.
+- **Backend**: `backend/online_teaching_platform/` — Maven, Spring Boot 4, Java 21, single module, **package-by-feature** (`auth`, `teacher`, `booking`, `schedule`, `course`, `user`, `notification`, …).
+
+## REST API
+
+- Base path: **`/api/...`**. Prefer **Controller → Service → Repository**, DTOs under `api/dto`.
+- OpenAPI/Swagger: springdoc; keep new endpoints documented.
+- Add or adjust **`SecurityConfig`** matchers for every new route (JWT stateless, RBAC: `STUDENT`, `TEACHER`, `ADMIN`).
+
+## Auth and secrets
+
+- Client sends **`Authorization: Bearer <accessToken>`** (stored as `accessToken` in `localStorage`).
+- Server: **BCrypt** for passwords; **never** log or commit secrets, API keys, or JWT signing keys.
+
+## Frontend HTTP
+
+- Use **`fetchJson`** from `frontend/src/lib/api.ts` (native `fetch`, not Axios).
+- Base URL: **`import.meta.env.VITE_API_BASE_URL`** — default `http://localhost:8080`.
+
+## Language
+
+- **User-visible UI**: Mongolian unless the user asks otherwise.
+- **Code and comments**: English, consistent with existing files.
+
+## Thesis / product scope (guardrails)
+
+- Do **not** implement “Won’t Have” unless explicitly requested: online payments, live video (WebRTC), native mobile apps, broad i18n/currencies, OAuth social login, AI tutor recommender.
+- If the thesis PDF disagrees with the repo, **follow the codebase** (source of truth).
+
+## Quality
+
+- Validate request DTOs with **`jakarta.validation`** where appropriate.
+- Use **parameterized JPA/repositories**; avoid string-concatenated SQL.
