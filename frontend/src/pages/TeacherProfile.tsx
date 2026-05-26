@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchJson, postFormData } from '../lib/api'
 import type { TeacherProfile } from '../auth/types'
+import { AlertBanner } from '../components/AlertBanner'
+import { PageHeader } from '../components/PageHeader'
+import { SectionCard } from '../components/SectionCard'
+import { StatusPill } from '../components/StatusPill'
 import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 function splitCsv(input: string): string[] {
@@ -146,140 +150,164 @@ export default function TeacherProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="page">
-        <h1>Багшийн профайл</h1>
+      <div className="page pageWide pageStack">
+        <PageHeader
+          eyebrow="Багшийн профайл"
+          title="Профайлаа бэлдэж байна"
+          subtitle="Таны багшийн профайл, зураг болон мэргэжлийн мэдээллийг ачаалж байна."
+        />
         <p className="muted">Ачаалж байна…</p>
       </div>
     )
   }
 
   return (
-    <div className="page">
-      <h1>Багшийн профайл</h1>
-      {profile ? (
-        <p className="muted">
-          Профайл ID: {profile.id} • Админ баталгаажуулалт: {profile.verified ? 'Тийм' : 'Хүлээгдэж буй'} • Шинэчилсэн:{' '}
-          {new Date(profile.updatedAt).toLocaleString('mn-MN')}
-        </p>
-      ) : null}
-
-      <form className="card form" onSubmit={onSave}>
-        <h2>Ерөнхий</h2>
-        <label>
-          Товч гарчиг
-          <input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={120} />
-        </label>
-        <label>
-          Танилцуулга
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={5} maxLength={2000} />
-        </label>
-
-        <div className="avatarUploadBlock">
-          <p className="muted small" style={{ margin: '0 0 8px' }}>
-            Профайл зураг (Cloudinary — profiles хавтас). Сонгоход урьдчилан харагдана.
-          </p>
-          {shownAvatarSrc ? (
-            <div className="avatarPreviewWrap">
-              <img className="avatarPreviewImg" src={shownAvatarSrc} alt="Профайл зураг" />
-            </div>
+    <div className="page pageWide pageStack">
+      <PageHeader
+        eyebrow="Багшийн профайл"
+        title="Профайлаа бүрэн гүйцэд болгоорой"
+        subtitle={
+          profile ? (
+            <>
+              Профайл ID: {profile.id} · Сүүлд шинэчилсэн: {new Date(profile.updatedAt).toLocaleString('mn-MN')}
+            </>
           ) : (
-            <div className="avatarPreviewPlaceholder muted small">Зураг сонгоогүй байна</div>
-          )}
-          <label>
-            Зураг сонгох
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                setAvatarUploadMsg(null)
-                const f = e.target.files?.[0] ?? null
-                setAvatarPick(f)
-              }}
-            />
-          </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <button type="button" disabled={!avatarPick || isUploadingAvatar} onClick={() => void onUploadAvatar()}>
-              {isUploadingAvatar ? 'Ачаалж байна…' : 'Зургийг серверт ачаалах'}
-            </button>
-            {avatarPick ? (
-              <button
-                type="button"
-                className="linkButton"
-                onClick={() => {
-                  setAvatarPick(null)
-                  setAvatarUploadMsg(null)
-                }}
-              >
-                Сонголтыг цуцлах
-              </button>
-            ) : null}
-          </div>
-          {avatarUploadMsg ? (
-            <div className="success small" style={{ margin: 0 }}>
-              {avatarUploadMsg}
+            'Сурагчдад харагдах танилцуулга, ур чадвар, холбоо барих мэдээллээ эндээс шинэчилнэ.'
+          )
+        }
+        actions={
+          profile ? (
+            <StatusPill label={profile.verified ? 'Админ баталгаажуулсан' : 'Админы шалгалтад хүлээгдэж байна'} tone={profile.verified ? 'success' : 'warning'} />
+          ) : null
+        }
+      />
+
+      {success ? <AlertBanner variant="success">{success}</AlertBanner> : null}
+      {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
+
+      <form className="profileEditor pageStack" onSubmit={onSave}>
+        <div className="profileEditorLayout">
+          <SectionCard
+            title="Профайл зураг"
+            subtitle="Зурагтай профайл илүү итгэл төрүүлдэг. Сонгосон зураг серверт ачаалагдсаны дараа сурагчдад харагдана."
+            className="profileEditorAside"
+          >
+            <div className="avatarUploadBlock">
+              {shownAvatarSrc ? (
+                <div className="avatarPreviewWrap">
+                  <img className="avatarPreviewImg" src={shownAvatarSrc} alt="Профайл зураг" />
+                </div>
+              ) : (
+                <div className="avatarPreviewPlaceholder muted small">Зураг сонгоогүй байна</div>
+              )}
+              <label>
+                Зураг сонгох
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    setAvatarUploadMsg(null)
+                    const f = e.target.files?.[0] ?? null
+                    setAvatarPick(f)
+                  }}
+                />
+              </label>
+              <div className="buttonRow buttonRow-wrap">
+                <button type="button" disabled={!avatarPick || isUploadingAvatar} onClick={() => void onUploadAvatar()}>
+                  {isUploadingAvatar ? 'Ачаалж байна…' : 'Зургийг серверт ачаалах'}
+                </button>
+                {avatarPick ? (
+                  <button
+                    type="button"
+                    className="btnGhost"
+                    onClick={() => {
+                      setAvatarPick(null)
+                      setAvatarUploadMsg(null)
+                    }}
+                  >
+                    Сонголтыг цуцлах
+                  </button>
+                ) : null}
+              </div>
+              {avatarUploadMsg ? <AlertBanner variant="success">{avatarUploadMsg}</AlertBanner> : null}
             </div>
-          ) : null}
+          </SectionCard>
+
+          <div className="profileEditorMain">
+            <SectionCard title="Ерөнхий танилцуулга" subtitle="Сурагчдад хамгийн түрүүнд харагдах мэдээлэл.">
+              <div className="form profileFormGrid">
+                <label>
+                  Товч гарчиг
+                  <input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={120} />
+                </label>
+                <label className="fieldSpanFull">
+                  Танилцуулга
+                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={5} maxLength={2000} />
+                </label>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Мэргэжлийн мэдээлэл"
+              subtitle="Заах хичээл, ур чадвар, хэлний мэдээллээ дэлгэрэнгүй оруулснаар хайлтад илүү сайн харагдана."
+            >
+              <div className="form profileFormGrid">
+                <label className="fieldSpanFull">
+                  Заах хичээлүүд (таслалаар тусгаарлана)
+                  <input value={subjectsCsv} onChange={(e) => setSubjectsCsv(e.target.value)} />
+                </label>
+                <p className="fieldHint fieldSpanFull">
+                  Өөрийн хичээлийн нэрээ чөлөөтэй бичиж болно. Хадгалахад систем хичээлийн жагсаалтад автоматаар бүртгэнэ.
+                </p>
+                <label>
+                  Ур чадварууд
+                  <input value={skillsCsv} onChange={(e) => setSkillsCsv(e.target.value)} />
+                </label>
+                <label>
+                  Хэлнүүд
+                  <input value={languagesCsv} onChange={(e) => setLanguagesCsv(e.target.value)} />
+                </label>
+                <label>
+                  Цагийн үнэ
+                  <input
+                    value={hourlyRate}
+                    onChange={(e) => setHourlyRate(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="ж: 25000"
+                  />
+                </label>
+                <label>
+                  Туршлага (жил)
+                  <input
+                    value={yearsExperience}
+                    onChange={(e) => setYearsExperience(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="ж: 5"
+                  />
+                </label>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Холбоо барих" subtitle="Хичээл эхлэхийн өмнөх зохион байгуулалтад хэрэгтэй мэдээллүүд.">
+              <div className="form profileFormGrid">
+                <label>
+                  Байршил
+                  <input value={location} onChange={(e) => setLocation(e.target.value)} />
+                </label>
+                <label>
+                  Утас
+                  <input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={40} />
+                </label>
+              </div>
+            </SectionCard>
+          </div>
         </div>
 
-        {/*<label>*/}
-        {/*  Эсвэл зургийн URL (сонголттой)*/}
-        {/*  <input*/}
-        {/*    value={avatarUrl}*/}
-        {/*    onChange={(e) => setAvatarUrl(e.target.value)}*/}
-        {/*    placeholder="https://…"*/}
-        {/*  />*/}
-        {/*</label>*/}
-
-        <h2>Мэргэжлийн мэдээлэл</h2>
-        <label>
-          Заах хичээлүүд (таслалаар тусгаарлана)
-          <input value={subjectsCsv} onChange={(e) => setSubjectsCsv(e.target.value)} />
-        </label>
-        <p className="muted small" style={{ margin: '-4px 0 0' }}>
-          Өөрийн хичээлийн нэрээ чөлөөтэй бичнэ; хадгалахад систем хичээлийн жагсаалтад автоматаар бүртгэнэ.
-        </p>
-        <label>
-          Ур чадварууд (таслалаар тусгаарлана)
-          <input value={skillsCsv} onChange={(e) => setSkillsCsv(e.target.value)} />
-        </label>
-        <label>
-          Хэлнүүд (таслалаар тусгаарлана)
-          <input value={languagesCsv} onChange={(e) => setLanguagesCsv(e.target.value)} />
-        </label>
-        <label>
-          Цагийн үнэ
-          <input
-            value={hourlyRate}
-            onChange={(e) => setHourlyRate(e.target.value)}
-            inputMode="decimal"
-            placeholder="ж: 25"
-          />
-        </label>
-        <label>
-          Туршлага (жил)
-          <input
-            value={yearsExperience}
-            onChange={(e) => setYearsExperience(e.target.value)}
-            inputMode="numeric"
-            placeholder="ж: 5"
-          />
-        </label>
-
-        <h2>Холбоо барих</h2>
-        <label>
-          Байршил
-          <input value={location} onChange={(e) => setLocation(e.target.value)} />
-        </label>
-        <label>
-          Утас
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={40} />
-        </label>
-
-        {success ? <div className="success">{success}</div> : null}
-        {error ? <div className="error">{error}</div> : null}
-        <button disabled={isSaving} type="submit">
-          {isSaving ? 'Хадгалж байна…' : 'Профайл хадгалах'}
-        </button>
+        <div className="profileFormFooter">
+          <button disabled={isSaving} type="submit">
+            {isSaving ? 'Хадгалж байна…' : 'Профайл хадгалах'}
+          </button>
+        </div>
       </form>
     </div>
   )

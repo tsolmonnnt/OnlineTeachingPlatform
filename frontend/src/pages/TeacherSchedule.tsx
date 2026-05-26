@@ -178,14 +178,15 @@ export default function TeacherSchedulePage() {
             </p>
             <p><strong>Төлөв:</strong> {slot.booked ? 'Захиалагдсан' : 'Сул'}</p>
             {!slot.booked ? (
-              <>
-                <button type="button" onClick={() => beginEdit(slot)}>
-                  Засах
-                </button>
-                <button type="button" onClick={() => deleteSlot(slot.id)}>
-                  Устгах
-                </button>
-              </>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button type="button" onClick={() => beginEdit(slot)}>
+                    Засах
+                  </button>
+
+                  <button type="button" onClick={() => deleteSlot(slot.id)}>
+                    Устгах
+                  </button>
+                </div>
             ) : null}
           </div>
         ))}

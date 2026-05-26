@@ -1,10 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError, fetchJson } from '../lib/api'
+import { fetchJson } from '../lib/api'
 import { dateToApiLocalDateTime, formatLocalDateTime } from '../lib/datetime'
 import { useAuth } from '../auth/AuthContext'
 import { TeacherAvatar } from '../components/TeacherAvatar'
+import { AlertBanner } from '../components/AlertBanner'
+import { EmptyState } from '../components/EmptyState'
+import { InfoList } from '../components/InfoList'
+import { PageHeader } from '../components/PageHeader'
+import { SectionCard } from '../components/SectionCard'
+import { StatusPill } from '../components/StatusPill'
 import type { AvailabilitySlot, Booking, QuizSummary, ReviewItem, TeacherDetail, TeachingMaterial } from '../auth/types'
+import { getFriendlyErrorMessage } from '../lib/errorMessages'
+
+function formatPrice(value: TeacherDetail['hourlyRate']) {
+  if (value == null || value === '') return 'Тохиролцоно'
+  return `${value}₮ / цаг`
+}
 
 export default function TeacherDetailPage() {
   const { teacherId } = useParams()
@@ -83,8 +95,7 @@ export default function TeacherDetailPage() {
           setMyBookings(bookings)
         }
       } catch (err) {
-        if (err instanceof ApiError) setError(err.message)
-        else setError('Багшийн мэдээлэл ачаалж чадсангүй')
+        setError(getFriendlyErrorMessage(err, 'Багшийн мэдээллийг ачаалж чадсангүй.'))
       } finally {
         setIsLoading(false)
       }
@@ -117,8 +128,7 @@ export default function TeacherDetailPage() {
       setSlots((prev) => prev.map((s) => (s.id === selectedSlotId ? { ...s, booked: true } : s)))
       setSelectedSlotId(null)
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Захиалга үүсгэх үед алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Захиалга үүсгэх үед алдаа гарлаа.'))
     }
   }
 
@@ -143,178 +153,274 @@ export default function TeacherDetailPage() {
       setReviews(rev)
       setReviewComment('')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Илгээхэд алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Сэтгэгдэл илгээх үед алдаа гарлаа.'))
     }
   }
 
   if (isLoading) {
-    return <div className="page"><p className="muted">Ачаалж байна...</p></div>
+    return (
+      <div className="page pageWide pageStack">
+        <Link to="/teachers" className="pageBackLink">
+          ← Багш хайлт руу буцах
+        </Link>
+        <p className="muted">Ачаалж байна…</p>
+      </div>
+    )
   }
 
   if (!teacher) {
-    return <div className="page"><p className="muted">Багш олдсонгүй.</p></div>
+    return (
+      <div className="page pageWide pageStack">
+        <Link to="/teachers" className="pageBackLink">
+          ← Багш хайлт руу буцах
+        </Link>
+        <EmptyState
+          title="Багшийн профайл олдсонгүй"
+          description="Холбоос буруу эсвэл тухайн багшийн мэдээлэл одоогоор харагдахгүй байна."
+          action={
+            <Link className="buttonLink" to="/teachers">
+              Багш хайх хуудас руу очих
+            </Link>
+          }
+        />
+      </div>
+    )
   }
 
   return (
-    <div className="page">
-      <div className="teacherDetailHeader">
-        <TeacherAvatar url={teacher.avatarUrl} name={teacher.fullName} size="lg" />
-        <div className="teacherDetailHeaderText">
-          <h1 style={{ marginTop: 0 }}>{teacher.fullName}</h1>
-          <p className="muted" style={{ marginTop: 0 }}>
-            {teacher.headline ?? 'Товч танилцуулга байхгүй'}
-          </p>
-        </div>
-      </div>
-      <div className="card" style={{ marginBottom: 12 }}>
-        <p>{teacher.bio ?? 'Дэлгэрэнгүй танилцуулга оруулаагүй.'}</p>
-        <p><strong>Хичээл:</strong> {(teacher.subjects ?? []).join(', ') || '-'}</p>
-        <p><strong>Ур чадвар:</strong> {(teacher.skills ?? []).join(', ') || '-'}</p>
-        <p><strong>Хэл:</strong> {(teacher.languages ?? []).join(', ') || '-'}</p>
-        <p><strong>Үнэ:</strong> {teacher.hourlyRate ?? '-'}</p>
-        <p className="muted small">
-          {teacher.verified ? 'Баталгаажсан багш' : 'Профайл хүлээгдэж буй'} · Дундаж үнэлгээ:{' '}
-          {teacher.reviewCount > 0 && teacher.averageRating != null
-            ? `${teacher.averageRating.toFixed(1)} (${teacher.reviewCount} сэтгэгдэл)`
-            : '—'}
-        </p>
-      </div>
+    <div className="page pageWide pageStack">
+      <Link to="/teachers" className="pageBackLink">
+        ← Багш хайлт руу буцах
+      </Link>
 
-      {materials.length ? (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <h2 style={{ marginTop: 0 }}>Материал</h2>
-          <ul style={{ margin: 0, paddingLeft: 20 }}>
-            {materials.map((m) => (
-              <li key={m.id}>
-                {m.secureUrl ? (
-                  <a href={m.secureUrl} target="_blank" rel="noreferrer">
-                    {m.title}
-                    {m.courseSubjectName ? ` · ${m.courseSubjectName}` : ''}
-                  </a>
-                ) : (
-                  <span className="muted" title="Тухайн хичээлээр баталгаажсан захиалгатай, нэвтэрсэн сурагчид линк харагдана">
-                    {m.title}
-                    {m.courseSubjectName ? ` · ${m.courseSubjectName}` : ''}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <PageHeader
+        eyebrow="Багшийн профайл"
+        title={teacher.fullName}
+        subtitle={teacher.headline ?? 'Товч танилцуулга оруулаагүй байна.'}
+        actions={<StatusPill label={teacher.verified ? 'Баталгаажсан багш' : 'Профайл шалгаж байна'} tone={teacher.verified ? 'success' : 'warning'} />}
+      />
 
-      {quizzes.length ? (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <h2 style={{ marginTop: 0 }}>Нийтлэгдсэн тестүүд</h2>
-          <p className="muted small" style={{ marginTop: 0 }}>
-            Тест ачаалах, оролцох нь нэвтэрсэн хэрэглэгчдэд зориулагдсан. Сурагч тухайн багш, тухайн хичээлээр баталгаажсан захиалгатай үед л зөвшөөрөгдөнө.
-          </p>
-          <ul style={{ margin: 0, paddingLeft: 20 }}>
-            {quizzes.map((q) => (
-              <li key={q.id}>
-                <Link to={`/quizzes/${q.id}/take`}>{q.title}</Link>
-                {q.courseSubjectName ? (
-                  <span className="muted small"> · {q.courseSubjectName}</span>
+      {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
+      {success ? <AlertBanner variant="success">{success}</AlertBanner> : null}
+
+      <div className="detailLayout">
+        <div className="detailMain">
+          <SectionCard className="detailHeroCard">
+            <div className="detailHero">
+              <TeacherAvatar url={teacher.avatarUrl} name={teacher.fullName} size="lg" />
+              <div className="detailHeroBody">
+                {(teacher.subjects.length || teacher.skills.length) ? (
+                  <div className="chipRow">
+                    {(teacher.subjects ?? []).map((item) => (
+                      <span key={`subject-${item}`} className="chip chip-subject">
+                        {item}
+                      </span>
+                    ))}
+                    {(teacher.skills ?? []).map((item) => (
+                      <span key={`skill-${item}`} className="chip">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 ) : null}
-                {' '}
-                <span className="muted small">({q.questionCount} асуулт)</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
 
-      <div className="card" style={{ marginBottom: 12 }}>
-        <h2 style={{ marginTop: 0 }}>Сэтгэгдэл</h2>
-        {reviews.length ? (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {reviews.map((r) => (
-              <div key={r.id} className="muted">
-                <strong>{r.studentName}</strong> — {r.rating}★ · {formatLocalDateTime(r.createdAt)}
-                {r.comment ? <div>{r.comment}</div> : null}
+                <InfoList
+                  className="detailInfoGrid"
+                  items={[
+                    { label: 'Үнэ', value: formatPrice(teacher.hourlyRate) },
+                    { label: 'Туршлага', value: teacher.yearsExperience != null ? `${teacher.yearsExperience} жил` : 'Мэдээлэлгүй' },
+                    { label: 'Хэл', value: (teacher.languages ?? []).join(', ') || 'Мэдээлэлгүй' },
+                    { label: 'Байршил', value: teacher.location ?? 'Онлайн / тодорхойгүй' },
+                    { label: 'Утас', value: teacher.phone ?? 'Оруулаагүй' },
+                    {
+                      label: 'Үнэлгээ',
+                      value:
+                        teacher.reviewCount > 0 && teacher.averageRating != null
+                          ? `${teacher.averageRating.toFixed(1)} / 5 (${teacher.reviewCount} сэтгэгдэл)`
+                          : 'Үнэлгээ хараахан аваагүй',
+                    },
+                  ]}
+                />
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted">Сэтгэгдэл алга.</p>
-        )}
+            </div>
 
-        {user?.role === 'STUDENT' && reviewableBookings.length ? (
-          <div className="form" style={{ marginTop: 12 }}>
-            <h3>Сэтгэгдэл үлдээх (баталгаажсан захиалга)</h3>
-            <label>
-              Захиалга
-              <select
-                value={reviewBookingId ?? ''}
-                onChange={(e) => setReviewBookingId(e.target.value ? Number(e.target.value) : null)}
-              >
-                <option value="">Сонгох</option>
-                {reviewableBookings.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    #{b.id} — {b.courseSubjectName ?? b.subject} — {formatLocalDateTime(b.slotStartTime)}
-                  </option>
+            <div className="detailBio">
+              <p>{teacher.bio ?? 'Дэлгэрэнгүй танилцуулга оруулаагүй байна.'}</p>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Материал"
+            subtitle="Тухайн багшийн байршуулсан файл, хичээлийн материалууд."
+          >
+            {materials.length ? (
+              <div className="resourceList">
+                {materials.map((m) => (
+                  <div key={m.id} className="resourceItem">
+                    <div>
+                      <div className="resourceTitle">{m.title}</div>
+                      <div className="muted small">
+                        {m.courseSubjectName ?? 'Хичээл тодорхойгүй'}
+                        {m.description ? ` · ${m.description}` : ''}
+                      </div>
+                    </div>
+                    {m.secureUrl ? (
+                      <a className="buttonLink" href={m.secureUrl} target="_blank" rel="noreferrer">
+                        Нээх
+                      </a>
+                    ) : (
+                      <span className="muted small" title="Захиалга баталгаажсан сурагчид линк харагдана">
+                        Нэвтэрсэн сурагчид нээгдэнэ
+                      </span>
+                    )}
+                  </div>
                 ))}
-              </select>
-            </label>
-            <label>
-              Он (1–5)
-              <input
-                type="number"
-                min={1}
-                max={5}
-                value={reviewRating}
-                onChange={(e) => setReviewRating(Number(e.target.value))}
+              </div>
+            ) : (
+              <EmptyState
+                title="Материал хараахан байршуулаагүй"
+                description="Энэ багш одоогоор энэ хичээл дээр файл оруулаагүй байна."
               />
-            </label>
-            <label>
-              Сэтгэгдэл
-              <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} rows={3} />
-            </label>
-            <button type="button" onClick={() => void submitReview()}>
-              Илгээх
-            </button>
-          </div>
-        ) : null}
-      </div>
+            )}
+          </SectionCard>
 
-      <div className="card form">
-        <h2>Боломжит цаг сонгож захиалах</h2>
-        {selectableSlots.length ? (
-          <label>
-            Сул цаг
-            <select
-              value={selectedSlotId ?? ''}
-              onChange={(e) => setSelectedSlotId(e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">Сонгох</option>
-              {selectableSlots.map((slot) => (
-                <option key={slot.id} value={slot.id}>
-                  {slot.courseSubjectName ?? 'Хичээл'} · {formatLocalDateTime(slot.startTime)} – {formatLocalDateTime(slot.endTime)}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <p className="muted">Одоогоор сул цаг алга.</p>
-        )}
+          <SectionCard
+            title="Нийтлэгдсэн тестүүд"
+            subtitle="Тухайн багшийн нийтэлсэн тестүүд. Баталгаажсан захиалгатай сурагчид оролцоно."
+          >
+            {quizzes.length ? (
+              <div className="resourceList">
+                {quizzes.map((q) => (
+                  <div key={q.id} className="resourceItem">
+                    <div>
+                      <div className="resourceTitle">{q.title}</div>
+                      <div className="muted small">
+                        {q.courseSubjectName ? `${q.courseSubjectName} · ` : ''}
+                        {q.questionCount} асуулт · {q.timeLimitMinutes} минут
+                      </div>
+                    </div>
+                    <Link className="buttonLink" to={`/quizzes/${q.id}/take`}>
+                      Тест нээх
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="Нийтлэгдсэн тест алга"
+                description="Энэ багш одоогоор олон нийтэд харагдах тест оруулаагүй байна."
+              />
+            )}
+          </SectionCard>
 
-        <label>
-          Хичээлийн нэр (слот сонгоход автоматаар бөглөгдөнө; захиалгын баталгаанд хэрэглэгдэнэ)
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} />
-        </label>
+          <SectionCard title="Сэтгэгдэл" subtitle="Бусад сурагчдын үлдээсэн үнэлгээ, сэтгэгдлүүд.">
+            {reviews.length ? (
+              <div className="reviewList">
+                {reviews.map((r) => (
+                  <div key={r.id} className="reviewItem">
+                    <div className="reviewItemHeader">
+                      <strong>{r.studentName}</strong>
+                      <StatusPill label={`${r.rating}★`} tone="info" />
+                    </div>
+                    <div className="muted small">{formatLocalDateTime(r.createdAt)}</div>
+                    {r.comment ? <p>{r.comment}</p> : <p className="muted">Тайлбаргүй үнэлгээ үлдээсэн.</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="Сэтгэгдэл хараахан алга" description="Энэ багшид хараахан үнэлгээ, сэтгэгдэл үлдээгээгүй байна." />
+            )}
 
-        <label>
-          Тэмдэглэл
-          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} />
-        </label>
+            {user?.role === 'STUDENT' && reviewableBookings.length ? (
+              <div className="reviewComposer">
+                <h3 className="sectionInlineTitle">Сэтгэгдэл үлдээх</h3>
+                <div className="form detailFormGrid">
+                  <label>
+                    Баталгаажсан захиалга
+                    <select
+                      value={reviewBookingId ?? ''}
+                      onChange={(e) => setReviewBookingId(e.target.value ? Number(e.target.value) : null)}
+                    >
+                      <option value="">Сонгох</option>
+                      {reviewableBookings.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          #{b.id} — {b.courseSubjectName ?? b.subject} — {formatLocalDateTime(b.slotStartTime)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Үнэлгээ (1–5)
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      value={reviewRating}
+                      onChange={(e) => setReviewRating(Number(e.target.value))}
+                    />
+                  </label>
+                </div>
+                <label>
+                  Сэтгэгдэл
+                  <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} rows={3} />
+                </label>
+                <div className="buttonRow">
+                  <button type="button" onClick={() => void submitReview()}>
+                    Сэтгэгдэл илгээх
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </SectionCard>
+        </div>
 
-        {error ? <div className="error">{error}</div> : null}
-        {success ? <div className="card" style={{ borderColor: '#86efac' }}>{success}</div> : null}
+        <aside className="detailSide">
+          <SectionCard
+            title="Цаг захиалах"
+            subtitle="Сурагч эрхтэй нэвтэрсэн үед доорх сул цагуудаас сонгон захиална."
+            className="bookingSidebar"
+          >
+            {selectableSlots.length ? (
+              <>
+                <label>
+                  Сул цаг
+                  <select
+                    value={selectedSlotId ?? ''}
+                    onChange={(e) => setSelectedSlotId(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Сонгох</option>
+                    {selectableSlots.map((slot) => (
+                      <option key={slot.id} value={slot.id}>
+                        {slot.courseSubjectName ?? 'Хичээл'} · {formatLocalDateTime(slot.startTime)} – {formatLocalDateTime(slot.endTime)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-        <button type="button" onClick={onBook} disabled={user?.role !== 'STUDENT' || !selectableSlots.length}>
-          {user?.role === 'STUDENT' ? 'Захиалах' : 'Захиалга хийхийн тулд сурагч эрхтэй нэвтэрнэ үү'}
-        </button>
+                <label>
+                  Хичээлийн нэр
+                  <input value={subject} onChange={(e) => setSubject(e.target.value)} />
+                </label>
+
+                <label>
+                  Тэмдэглэл
+                  <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4} />
+                </label>
+              </>
+            ) : (
+              <EmptyState
+                title="Одоогоор сул цаг алга"
+                description="Өөр багш хайх эсвэл дараа дахин орж хуваарийг шалгана уу."
+              />
+            )}
+
+            <div className="bookingSidebarFooter">
+              <button type="button" onClick={onBook} disabled={user?.role !== 'STUDENT' || !selectableSlots.length}>
+                {user?.role === 'STUDENT' ? 'Захиалга илгээх' : 'Сурагч эрхээр нэвтэрч захиална'}
+              </button>
+            </div>
+          </SectionCard>
+        </aside>
       </div>
     </div>
   )

@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ApiError, fetchJson } from '../lib/api'
+import { fetchJson } from '../lib/api'
 import { useAuth } from '../auth/AuthContext'
+import { AlertBanner } from '../components/AlertBanner'
+import { EmptyState } from '../components/EmptyState'
+import { FilterBar } from '../components/FilterBar'
+import { PageHeader } from '../components/PageHeader'
+import { SectionCard } from '../components/SectionCard'
+import { StatusPill } from '../components/StatusPill'
 import type { Booking, CourseSubject } from '../auth/types'
+import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 type EnrolledCourseCard = {
   key: string
@@ -38,10 +45,8 @@ function CourseThumb({ seed }: { seed: number }) {
   const h = ((seed * 17) % 360 + 360) % 360
   return (
     <div
-      className="courseThumb"
+      className="courseThumb courseThumbCard"
       style={{
-        height: 120,
-        borderRadius: '12px 12px 0 0',
         background: `hsl(${h}, 38%, 42%)`,
       }}
     />
@@ -73,8 +78,7 @@ export default function MyCoursesPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          if (err instanceof ApiError) setError(err.message)
-          else setError('Ачаалж чадсангүй')
+          setError(getFriendlyErrorMessage(err, 'Хичээлийн мэдээллийг ачаалж чадсангүй.'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -117,96 +121,110 @@ export default function MyCoursesPage() {
 
   if (!user || (user.role !== 'TEACHER' && user.role !== 'STUDENT')) {
     return (
-      <div className="page">
-        <p>Энэ хуудсыг зөвхөн багш эсвэл сурагч ашиглана.</p>
+      <div className="page pageWide pageStack">
+        <EmptyState title="Энэ хэсэгт хандах боломжгүй" description="Энэ хуудсыг зөвхөн багш эсвэл сурагч эрхтэй хэрэглэгчид ашиглана." />
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="page">
+      <div className="page pageWide pageStack">
+        <PageHeader eyebrow="Миний хичээлүүд" title="Хичээлүүдийг бэлдэж байна" subtitle="Таны заадаг болон баталгаажсан хичээлүүдийг ачаалж байна." />
         <p className="muted">Ачаалж байна...</p>
       </div>
     )
   }
 
   return (
-    <div className="page pageWide">
-      <div className="pageHeader">Миний хичээлүүд</div>
+    <div className="page pageWide pageStack">
+      <PageHeader
+        eyebrow="Миний хичээлүүд"
+        title={user.role === 'TEACHER' ? 'Заадаг хичээлүүдээ удирдах' : 'Баталгаажсан хичээлүүдээ хянах'}
+        subtitle={
+          user.role === 'TEACHER'
+            ? 'Хичээл бүрийн хуваарь, материал, тестийг нэг дороос удирдана.'
+            : 'Баталгаажсан хичээлүүд дээрээ багшийн профайл, материал болон хичээлийн мэдээллийг хянаарай.'
+        }
+      />
 
-      {error ? <div className="error">{error}</div> : null}
+      {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
 
       {user.role === 'TEACHER' ? (
         <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h2 className="sectionTitleUnderline">Хичээлийн жагсаалт</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-              <label className="muted small" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                Ангилал
-                <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-                  <option value="all">Бүгд</option>
-                  {teacherCategories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label style={{ flex: '1 1 200px', minWidth: 0 }}>
-                <span className="muted small">Хайх</span>
-                <input
-                  type="search"
-                  placeholder="Нэр, ангилал..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </label>
-              <label className="muted small" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                Эрэмбэлэх
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'name' | 'category')}>
-                  <option value="name">Нэрээр</option>
-                  <option value="category">Ангиллаар</option>
-                </select>
-              </label>
-            </div>
+          <FilterBar>
+            <label>
+              Ангилал
+              <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                <option value="all">Бүгд</option>
+                {teacherCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Хайх
+              <input
+                type="search"
+                placeholder="Нэр, ангилал..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <label>
+              Эрэмбэлэх
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'name' | 'category')}>
+                <option value="name">Нэрээр</option>
+                <option value="category">Ангиллаар</option>
+              </select>
+            </label>
+          </FilterBar>
+
+          <div className="courseCatalogSummary muted small">
+            {filteredTeacherSubjects.length
+              ? `Нийт ${filteredTeacherSubjects.length} хичээл удирдах боломжтой байна.`
+              : 'Таны шүүлтүүрт тохирох хичээл олдсонгүй.'}
           </div>
 
           {!teacherSubjects.length ? (
-            <div className="card">
-              <p className="muted">
-                Зааж буй хичээлийн нэрээ оруулаагүй байна.{' '}
-                <Link to="/teacher/profile">Профайл</Link> дээр хичээлүүдийн жагсаалтаа (таслалаар) бичнэ үү.
-              </p>
-            </div>
+            <EmptyState
+              title="Заадаг хичээл хараахан алга"
+              description={
+                <>
+                  Профайл дээрээ заах хичээлүүдээ оруулснаар энд автоматаар жагсана.{' '}
+                  <Link to="/teacher/profile">Профайл руу орох</Link>
+                </>
+              }
+            />
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: 16,
-              }}
-            >
+            <div className="courseCatalogGrid">
               {filteredTeacherSubjects.map((s) => (
-                <Link
-                  key={s.id}
-                  to={`/teacher/subject/${s.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div
-                    className="card myCourseCard"
-                    style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}
-                  >
+                <Link key={s.id} to={`/teacher/subject/${s.id}`} className="courseCardLink">
+                  <div className="card myCourseCard courseCardSurface">
                     <CourseThumb seed={s.id} />
-                    <div style={{ padding: 12, flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div className="muted small">
-                        {s.categoryName}
-                        {s.description ? ` · ${s.description.slice(0, 40)}${s.description.length > 40 ? '…' : ''}` : ''}
+                    <div className="courseCardBody">
+                      <div className="courseCardTop">
+                        <StatusPill label={s.categoryName} tone="info" />
+                        <span className="courseCardMeta">Удирдлагын workspace</span>
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.3 }}>{s.name}</div>
-                      <div style={{ marginTop: 'auto' }} className="muted small">
-                        Нээх →
+                      <div className="courseCardTitle">{s.name}</div>
+                      <p className="courseCardDescription">
+                        {s.description?.trim()
+                          ? s.description
+                          : 'Эндээс тухайн хичээлийн цаг, материал, тестүүдээ нэг дороос удирдана.'}
+                      </p>
+                      <div className="courseCardFeatures">
+                        <span className="courseCardFeature">Сул цаг</span>
+                        <span className="courseCardFeature">Материал</span>
+                        <span className="courseCardFeature">Тест</span>
+                      </div>
+                      <div className="courseCardFooter">
+                        <div className="courseCardHint">Цаг, материал, тест удирдах</div>
+                        <div className="courseCardArrow" aria-hidden>
+                          →
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -217,35 +235,42 @@ export default function MyCoursesPage() {
         </>
       ) : (
         <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Баталгаажсан хичээлүүд</h2>
-            <p className="muted small" style={{ margin: 0 }}>
-              Захиалга батлагдсан хичээл бүрт нэг карт харуулна.
-            </p>
-          </div>
+          <SectionCard
+            title="Баталгаажсан хичээлүүд"
+            subtitle="Захиалга батлагдсан хичээл бүр энд нэг картаар харагдана."
+          >
+            <p className="muted small">Багшийн профайл руу орж материал, тест болон ирэх хичээлийн мэдээллийг хянаарай.</p>
+          </SectionCard>
           {!studentCards.length ? (
-            <div className="muted">Одоогоор баталгаажсан хичээл алга.</div>
+            <EmptyState
+              title="Баталгаажсан хичээл алга"
+              description="Багшийн сул цагийг сонгож захиалга баталгаажсаны дараа энэ хэсэгт харагдана."
+            />
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: 16,
-              }}
-            >
+            <div className="courseCatalogGrid">
               {studentCards.map((c) => (
-                <Link
-                  key={c.key}
-                  to={`/teachers/${c.teacherId}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div className="card" style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+                <Link key={c.key} to={`/teachers/${c.teacherId}`} className="courseCardLink">
+                  <div className="card courseCardSurface">
                     <CourseThumb seed={c.courseSubjectId ?? c.teacherId * 7} />
-                    <div style={{ padding: 12 }}>
-                      <div className="muted small">{c.teacherName}</div>
-                      <div style={{ fontWeight: 700, marginTop: 6 }}>{c.subjectLine}</div>
-                      <div className="muted small" style={{ marginTop: 8 }}>
-                        Багшийг харах →
+                    <div className="courseCardBody">
+                      <div className="courseCardTop">
+                        <StatusPill label="Баталгаажсан" tone="success" />
+                        <span className="courseCardMeta">{c.teacherName}</span>
+                      </div>
+                      <div className="courseCardTitle">{c.subjectLine}</div>
+                      <p className="courseCardDescription">
+                        Багшийн профайл, материал болон тестийн мэдээллийг энэ хичээлээс харах боломжтой.
+                      </p>
+                      <div className="courseCardFeatures">
+                        <span className="courseCardFeature">Материал</span>
+                        <span className="courseCardFeature">Тест</span>
+                        <span className="courseCardFeature">Хуваарь</span>
+                      </div>
+                      <div className="courseCardFooter">
+                        <div className="courseCardHint">Багшийн профайл харах</div>
+                        <div className="courseCardArrow" aria-hidden>
+                          →
+                        </div>
                       </div>
                     </div>
                   </div>

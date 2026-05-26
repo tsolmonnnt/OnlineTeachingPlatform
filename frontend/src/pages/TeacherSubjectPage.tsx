@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ApiError, fetchJson, postFormData } from '../lib/api'
+import { fetchJson, postFormData } from '../lib/api'
 import {
   apiDateTimeToDatetimeLocalValue,
   datetimeLocalInputToApi,
   parseLocalDateTime,
 } from '../lib/datetime'
-import { FileUploadPreview } from '../components/FileUploadPreview'
+import { AlertBanner } from '../components/AlertBanner'
+import { EmptyState } from '../components/EmptyState'
+import { FileUploadField } from '../components/FileUploadField'
 import { Modal } from '../components/Modal'
+import { PageHeader } from '../components/PageHeader'
+import { SectionCard } from '../components/SectionCard'
+import { StatusPill } from '../components/StatusPill'
 import type { AvailabilitySlot, CourseSubject, QuizSummary, TeachingMaterial } from '../auth/types'
+import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 function ClockIcon() {
   return (
@@ -21,9 +27,29 @@ function ClockIcon() {
 
 function CalendarIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function UploadIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M12 16V8" strokeLinecap="round" />
+      <path d="m8.5 11.5 3.5-3.5 3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 18.5h10a3.5 3.5 0 0 0 .57-6.954A5 5 0 0 0 8.063 9.57 3.5 3.5 0 0 0 7 18.5Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function QuizIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M9 9a3 3 0 1 1 6 0c0 2-3 2-3 5" strokeLinecap="round" />
+      <path d="M12 18h.01" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="9" />
     </svg>
   )
 }
@@ -37,6 +63,28 @@ function formatSlotCard(slot: AvailabilitySlot) {
   return { day, range: `${t1} – ${t2}` }
 }
 
+function formatFileSize(sizeBytes: number | null) {
+  if (!sizeBytes || sizeBytes <= 0) {
+    return 'Хэмжээ тодорхойгүй'
+  }
+
+  if (sizeBytes >= 1024 * 1024) {
+    return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`
+}
+
+function formatMaterialMeta(material: TeachingMaterial) {
+  const parts = [
+    material.contentType ? material.contentType : null,
+    material.sizeBytes != null ? formatFileSize(material.sizeBytes) : null,
+    new Date(material.createdAt).toLocaleString('mn-MN', { dateStyle: 'medium', timeStyle: 'short' }),
+  ].filter(Boolean)
+
+  return parts.join(' · ')
+}
+
 export default function TeacherSubjectPage() {
   const { courseSubjectId: paramId } = useParams<{ courseSubjectId: string }>()
   const subjectId = paramId ? Number(paramId) : NaN
@@ -47,6 +95,7 @@ export default function TeacherSubjectPage() {
   const [materials, setMaterials] = useState<TeachingMaterial[]>([])
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [slotModalOpen, setSlotModalOpen] = useState(false)
@@ -87,8 +136,7 @@ export default function TeacherSubjectPage() {
       setMaterials(allMat.filter((m) => m.courseSubjectId === subjectId))
       setQuizzes(allQuizzes.filter((q) => q.courseSubjectId === subjectId))
     } catch (err) {
-      if (err instanceof ApiError) setLoadError(err.message)
-      else setLoadError('Ачаалж чадсангүй')
+      setLoadError(getFriendlyErrorMessage(err, 'Хичээлийн workspace-ийг ачаалж чадсангүй.'))
     } finally {
       setLoading(false)
     }
@@ -114,6 +162,7 @@ export default function TeacherSubjectPage() {
   async function submitSlot(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     if (!slotStartTime) {
       setError('Эхлэх цаг оруулна уу')
       return
@@ -138,26 +187,28 @@ export default function TeacherSubjectPage() {
       setEditingSlotId(null)
       setSlotStartTime('')
       await refresh()
+      setSuccess(editingSlotId != null ? 'Слот амжилттай шинэчлэгдлээ.' : 'Шинэ слот амжилттай нэмэгдлээ.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Слот хадгалахад алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Слот хадгалах үед алдаа гарлаа.'))
     }
   }
 
   async function deleteSlot(slotId: number) {
     setError(null)
+    setSuccess(null)
     try {
       await fetchJson<void>(`/api/schedules/me/${slotId}`, { method: 'DELETE' })
       await refresh()
+      setSuccess('Слот амжилттай устгагдлаа.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Устгахад алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Слот устгах үед алдаа гарлаа.'))
     }
   }
 
   async function submitMaterial(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     if (!matFile) {
       setError('Файл сонгоно уу')
       return
@@ -174,15 +225,16 @@ export default function TeacherSubjectPage() {
       setMatDesc('')
       setMatFile(null)
       await refresh()
+      setSuccess('Материал амжилттай байршлаа.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Байршуулахад алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Материал байршуулах үед алдаа гарлаа.'))
     }
   }
 
   async function submitQuiz(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     try {
       await fetchJson('/api/quizzes', {
         method: 'POST',
@@ -209,133 +261,161 @@ export default function TeacherSubjectPage() {
       })
       setQuizModalOpen(false)
       await refresh()
+      setSuccess('Жишээ тест амжилттай үүслээ.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Тест үүсгэхэд алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Тест үүсгэх үед алдаа гарлаа.'))
     }
   }
 
   async function deleteMaterial(id: number) {
     setError(null)
+    setSuccess(null)
     try {
       await fetchJson(`/api/materials/${id}`, { method: 'DELETE' })
       await refresh()
+      setSuccess('Материал амжилттай устгагдлаа.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
-      else setError('Устгахад алдаа гарлаа')
+      setError(getFriendlyErrorMessage(err, 'Материал устгах үед алдаа гарлаа.'))
     }
   }
 
   async function deleteQuiz(id: number) {
     setError(null)
+    setSuccess(null)
     try {
       await fetchJson(`/api/quizzes/mine/${id}`, { method: 'DELETE' })
       await refresh()
+      setSuccess('Тест амжилттай устгагдлаа.')
     } catch (err) {
-      if (err instanceof ApiError) setError(err.message)
+      setError(getFriendlyErrorMessage(err, 'Тест устгах үед алдаа гарлаа.'))
     }
   }
 
   if (!Number.isFinite(subjectId)) {
     return (
-      <div className="page pageWide">
-        <p>Буруу хичээлийн дугаар.</p>
-        <Link to="/my-courses">← Буцах</Link>
+      <div className="page pageWide pageStack">
+        <Link to="/my-courses" className="pageBackLink">
+          ← Миний хичээлүүд
+        </Link>
+        <EmptyState title="Хичээлийн дугаар буруу байна" description="Хүссэн хичээлийн холбоос хүчингүй эсвэл олдсонгүй." />
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div className="page pageWide">
-        <Link to="/my-courses" className="muted small subjectBack" style={{ textDecoration: 'none' }}>
+      <div className="page pageWide pageStack">
+        <Link to="/my-courses" className="pageBackLink">
           ← Миний хичээлүүд
         </Link>
-        <p className="muted" style={{ marginTop: 16 }}>
-          Ачаалж байна…
-        </p>
+        <p className="muted">Ачаалж байна…</p>
       </div>
     )
   }
 
   if (loadError || !subject) {
     return (
-      <div className="page pageWide">
-        <Link to="/my-courses" className="muted small subjectBack" style={{ textDecoration: 'none' }}>
+      <div className="page pageWide pageStack">
+        <Link to="/my-courses" className="pageBackLink">
           ← Миний хичээлүүд
         </Link>
-        <div className="error" style={{ marginTop: 16 }}>
-          {loadError ?? 'Олдсонгүй'}
-        </div>
+        <AlertBanner variant="error">{loadError ?? 'Олдсонгүй'}</AlertBanner>
       </div>
     )
   }
 
   return (
-    <div className="page pageWide subjectWorkspace">
-      <Link to="/my-courses" className="subjectBack muted small">
+    <div className="page pageWide pageStack subjectWorkspace">
+      <Link to="/my-courses" className="pageBackLink">
         ← Миний хичээлүүд
       </Link>
 
-      <header className="subjectHeader">
-        <div>
-          <p className="muted small" style={{ margin: 0 }}>
-            {subject.categoryName}
-          </p>
-          <h1 style={{ margin: '6px 0 4px', fontSize: 28, letterSpacing: '-0.03em' }}>{subject.name}</h1>
-          {subject.description ? <p className="muted small">{subject.description}</p> : null}
-        </div>
-      </header>
+      <PageHeader
+        eyebrow={subject.categoryName}
+        title={subject.name}
+        subtitle={subject.description ?? 'Энэ хичээлийн цаг, материал, тестийг нэг workspace-ээс удирдана.'}
+      />
 
-      {error ? <div className="error" style={{ marginBottom: 16 }}>{error}</div> : null}
+      {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
+      {success ? <AlertBanner variant="success">{success}</AlertBanner> : null}
+
+      <div className="subjectStatGrid">
+        <div className="card subjectStatCard">
+          <div className="subjectStatLabel">Сул цаг</div>
+          <div className="subjectStatValue">{slots.length}</div>
+          <div className="subjectStatHint">Захиалга авах боломжтой цагууд</div>
+        </div>
+        <div className="card subjectStatCard">
+          <div className="subjectStatLabel">Материал</div>
+          <div className="subjectStatValue">{materials.length}</div>
+          <div className="subjectStatHint">Энэ хичээлд байршуулсан файлууд</div>
+        </div>
+        <div className="card subjectStatCard">
+          <div className="subjectStatLabel">Тест</div>
+          <div className="subjectStatValue">{quizzes.length}</div>
+          <div className="subjectStatHint">Сурагчдад өгөх боломжтой тестүүд</div>
+        </div>
+      </div>
 
       <section className="quickActions" aria-label="Хурдан үйлдэл">
         <button type="button" className="quickActionBtn" onClick={openAddSlot}>
           <span className="quickActionIcon" aria-hidden>
-            📅
+            <CalendarIcon />
           </span>
-          <span>Цаг нэмэх</span>
+          <span className="quickActionTitle">Цаг нэмэх</span>
+          <span className="quickActionDescription">Шинэ 30 минутын слот үүсгэх</span>
         </button>
         <button type="button" className="quickActionBtn" onClick={() => setMaterialModalOpen(true)}>
           <span className="quickActionIcon" aria-hidden>
-            📁
+            <UploadIcon />
           </span>
-          <span>Файл оруулах</span>
+          <span className="quickActionTitle">Файл оруулах</span>
+          <span className="quickActionDescription">Хичээлийн материал байршуулах</span>
         </button>
         <button type="button" className="quickActionBtn" onClick={() => setQuizModalOpen(true)}>
           <span className="quickActionIcon" aria-hidden>
-            📝
+            <QuizIcon />
           </span>
-          <span>Тест үүсгэх</span>
+          <span className="quickActionTitle">Тест үүсгэх</span>
+          <span className="quickActionDescription">Сурагчдад зориулсан жишээ тест бэлдэх</span>
         </button>
-        {/*<Link to="/teacher/profile" className="quickActionBtn quickActionLink">*/}
-        {/*  <span className="quickActionIcon" aria-hidden>*/}
-        {/*    👤*/}
-        {/*  </span>*/}
-        {/*  <span>Профайл засах</span>*/}
-        {/*</Link>*/}
       </section>
 
-      <section className="subjectSection">
-        <div className="subjectSectionHead">
-          <CalendarIcon />
-          <h2>Сул цагууд</h2>
-        </div>
+      <SectionCard
+        title="Сул цагууд"
+        subtitle="Оюутнууд энэ хичээлээр цаг захиалах боломжтой слотуудаа эндээс удирдана."
+        actions={
+          <button type="button" className="btnGhost" onClick={openAddSlot}>
+            Шинэ слот
+          </button>
+        }
+      >
         {!slots.length ? (
-          <p className="muted small">Энэ хичээлд үүссэн слот алга. «Цаг нэмэх» товчоор нэмнэ үү.</p>
+          <EmptyState
+            title="Сул цаг үүсээгүй байна"
+            description="Хичээлээ захиалгад нээхийн тулд эхний боломжит цагаа эндээс нэмнэ үү."
+            action={
+              <button type="button" onClick={openAddSlot}>
+                Цаг нэмэх
+              </button>
+            }
+          />
         ) : (
           <div className="slotCardGrid">
             {slots.map((slot) => {
               const { day, range } = formatSlotCard(slot)
               return (
                 <div key={slot.id} className="slotCard">
-                  <div className="slotCardDay">{day}</div>
+                  <div className="slotCardHeader">
+                    <div className="slotCardDay">{day}</div>
+                    <StatusPill label={slot.booked ? 'Захиалагдсан' : 'Сул'} tone={slot.booked ? 'warning' : 'success'} />
+                  </div>
                   <div className="slotCardTime">
                     <ClockIcon />
                     <span>{range}</span>
                   </div>
                   <div className="slotCardMeta muted small">
-                    {slot.booked ? 'Захиалагдсан' : 'Сул'}
+                    {slot.booked ? 'Сурагч захиалсан тул зөвхөн харах боломжтой.' : 'Энэ слотыг засах, устгах боломжтой.'}
                   </div>
                   {!slot.booked ? (
                     <div className="slotCardActions">
@@ -352,50 +432,105 @@ export default function TeacherSubjectPage() {
             })}
           </div>
         )}
-      </section>
+      </SectionCard>
 
-      <section className="subjectSection">
-        <h2>Материал</h2>
-        <div className="subjectList">
-          {materials.map((m) => (
-            <div key={m.id} className="subjectListRow card">
-              <div>
-                <strong>{m.title}</strong>
-                <div className="muted small">{m.description ?? ''}</div>
-                {m.secureUrl ? (
-                  <a href={m.secureUrl} target="_blank" rel="noreferrer">
-                    Нээх
-                  </a>
-                ) : null}
-              </div>
-              <button type="button" className="btnGhost smallBtn danger" onClick={() => void deleteMaterial(m.id)}>
-                Устгах
-              </button>
-            </div>
-          ))}
-          {!materials.length ? <p className="muted small">Материал алга.</p> : null}
-        </div>
-      </section>
-
-      <section className="subjectSection">
-        <h2>Тестүүд</h2>
-        <div className="subjectList">
-          {quizzes.map((q) => (
-            <div key={q.id} className="subjectListRow card">
-              <div>
-                <strong>{q.title}</strong>
-                <div className="muted small">
-                  {q.questionCount} асуулт · {q.timeLimitMinutes} мин
+      <SectionCard
+        title="Материал"
+        subtitle="Сурагчдад харагдах файл, тайлбар болон холбоосуудаа нэг дороос удирдана."
+        actions={
+          <button type="button" className="btnGhost" onClick={() => setMaterialModalOpen(true)}>
+            Материал оруулах
+          </button>
+        }
+      >
+        {materials.length ? (
+          <div className="subjectList">
+            {materials.map((material) => (
+              <article key={material.id} className="card subjectResourceRow">
+                <div className="subjectResourceMain">
+                  <div className="subjectResourceTitleRow">
+                    <strong>{material.title}</strong>
+                    <StatusPill label="Материал" tone="info" />
+                  </div>
+                  <div className="muted small">{formatMaterialMeta(material)}</div>
+                  <div className="subjectResourceDescription">
+                    {material.description?.trim() ? material.description : 'Нэмэлт тайлбар оруулаагүй байна.'}
+                  </div>
                 </div>
-              </div>
-              <button type="button" className="btnGhost smallBtn danger" onClick={() => void deleteQuiz(q.id)}>
-                Устгах
+                <div className="subjectResourceActions">
+                  {material.secureUrl ? (
+                    <a className="buttonLink" href={material.secureUrl} target="_blank" rel="noreferrer">
+                      Нээх
+                    </a>
+                  ) : (
+                    <span className="muted small">Линк олдсонгүй</span>
+                  )}
+                  <button type="button" className="btnGhost smallBtn danger" onClick={() => void deleteMaterial(material.id)}>
+                    Устгах
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Материал хараахан алга"
+            description="Эхний файл, зураг эсвэл хичээлийн материалaa байршуулснаар энэ хэсэгт харагдана."
+            action={
+              <button type="button" onClick={() => setMaterialModalOpen(true)}>
+                Файл оруулах
               </button>
-            </div>
-          ))}
-          {!quizzes.length ? <p className="muted small">Тест алга.</p> : null}
-        </div>
-      </section>
+            }
+          />
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Тестүүд"
+        subtitle="Сурагчдад зориулсан богино шалгалт, дасгалын тестүүд."
+        actions={
+          <button type="button" className="btnGhost" onClick={() => setQuizModalOpen(true)}>
+            Тест нэмэх
+          </button>
+        }
+      >
+        {quizzes.length ? (
+          <div className="subjectList">
+            {quizzes.map((quiz) => (
+              <article key={quiz.id} className="card subjectResourceRow">
+                <div className="subjectResourceMain">
+                  <div className="subjectResourceTitleRow">
+                    <strong>{quiz.title}</strong>
+                    <StatusPill label={quiz.published ? 'Нийтлэгдсэн' : 'Ноорог'} tone={quiz.published ? 'success' : 'neutral'} />
+                  </div>
+                  <div className="muted small">
+                    {quiz.questionCount} асуулт · {quiz.timeLimitMinutes} минут ·{' '}
+                    {new Date(quiz.createdAt).toLocaleString('mn-MN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
+                  <div className="subjectResourceDescription">
+                    {quiz.description?.trim() ? quiz.description : 'Тайлбаргүй тест.'}
+                  </div>
+                </div>
+                <div className="subjectResourceActions">
+                  <button type="button" className="btnGhost smallBtn danger" onClick={() => void deleteQuiz(quiz.id)}>
+                    Устгах
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Тест үүсгээгүй байна"
+            description="Сурагчдад өгөх жишээ тест эсвэл хурдан шалгалтаа эндээс эхлүүлнэ үү."
+            action={
+              <button type="button" onClick={() => setQuizModalOpen(true)}>
+                Тест үүсгэх
+              </button>
+            }
+          />
+        )}
+      </SectionCard>
 
       <Modal
         title={editingSlotId != null ? 'Слот засах' : 'Шинэ слот'}
@@ -407,14 +542,12 @@ export default function TeacherSubjectPage() {
         }}
       >
         <form className="form modalForm" onSubmit={(e) => void submitSlot(e)}>
-          <p className="muted small" style={{ marginTop: 0 }}>
-            Нэг слот = 30 минут. Эхлэл :00 эсвэл :30.
-          </p>
+          <p className="muted small modalIntro">Нэг слот = 30 минут. Эхлэл :00 эсвэл :30 байхаар оруулна уу.</p>
           <label>
             Эхлэх цаг
             <input type="datetime-local" value={slotStartTime} onChange={(e) => setSlotStartTime(e.target.value)} required />
           </label>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="buttonRow subjectModalActions">
             <button type="button" className="btnGhost" onClick={() => setSlotModalOpen(false)}>
               Цуцлах
             </button>
@@ -442,12 +575,13 @@ export default function TeacherSubjectPage() {
             Тайлбар
             <textarea value={matDesc} onChange={(e) => setMatDesc(e.target.value)} rows={2} />
           </label>
-          <label>
-            Файл
-            <input type="file" onChange={(e) => setMatFile(e.target.files?.[0] ?? null)} />
-          </label>
-          <FileUploadPreview file={matFile} />
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+          <FileUploadField
+            file={matFile}
+            onFileChange={setMatFile}
+            label="Материалын файл"
+            helperText="PNG, JPG, WEBP, PDF, DOCX, PPTX зэрэг материалыг энэ хэсэг дээр дарж сонгоно уу."
+          />
+          <div className="buttonRow subjectModalActions">
             <button type="button" className="btnGhost" onClick={() => setMaterialModalOpen(false)}>
               Цуцлах
             </button>
@@ -475,7 +609,7 @@ export default function TeacherSubjectPage() {
             <input type="number" min={1} value={quizTime} onChange={(e) => setQuizTime(Number(e.target.value))} />
           </label>
           <p className="muted small">2 жишээ асуулт автоматаар нэмэгдэнэ.</p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+          <div className="buttonRow subjectModalActions">
             <button type="button" className="btnGhost" onClick={() => setQuizModalOpen(false)}>
               Цуцлах
             </button>

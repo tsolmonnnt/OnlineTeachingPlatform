@@ -1,9 +1,18 @@
 import MenuIcon from '@mui/icons-material/Menu'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import CloseIcon from '@mui/icons-material/Close'
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useTheme } from '../theme/ThemeContext'
+
+type ShellNavItem = {
+  to: string
+  label: string
+  end?: boolean
+}
 
 function getFlashMessage(state: unknown): string | null {
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
@@ -16,12 +25,38 @@ function getFlashMessage(state: unknown): string | null {
 
 export default function AppShell() {
   const { user, logout } = useAuth()
+  const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const closeSidebar = () => setSidebarOpen(false)
   const flashMessage = getFlashMessage(location.state)
+  const guestNavItems: ShellNavItem[] = [
+    { to: '/', label: 'Нүүр', end: true },
+    { to: '/teachers', label: 'Багш хайх' },
+    { to: '/login', label: 'Нэвтрэх' },
+    { to: '/register', label: 'Бүртгүүлэх' },
+  ]
+  const primaryNavItems: ShellNavItem[] = [
+    { to: '/', label: 'Нүүр', end: true },
+    { to: '/teachers', label: 'Багш хайх' },
+  ]
+  const workflowNavItems: ShellNavItem[] = [
+    { to: '/bookings', label: 'Захиалгууд' },
+    { to: '/notifications', label: 'Мэдэгдлүүд' },
+  ]
+  const teacherNavItems: ShellNavItem[] = [
+    { to: '/teacher/profile', label: 'Багшийн профайл' },
+    { to: '/teacher/schedule', label: 'Хуваарь' },
+    { to: '/teacher/materials', label: 'Материал' },
+    { to: '/teacher/quizzes', label: 'Тестүүд' },
+  ]
+  const adminNavItems: ShellNavItem[] = [{ to: '/admin', label: 'Удирдлага' }]
+
+  if (user?.role === 'TEACHER' || user?.role === 'STUDENT') {
+    primaryNavItems.splice(2, 0, { to: '/my-courses', label: 'Миний хичээлүүд' })
+  }
 
   useEffect(() => {
     if (!flashMessage) {
@@ -52,74 +87,57 @@ export default function AppShell() {
             </button>
           ) : null}
           <Link className="shellBrand" to="/" onClick={closeSidebar}>
-            ОнлайнСургалтынПлатформ
+            Онлайн Сургалтын Платформ
           </Link>
         </div>
-        <nav className="shellTopNav" aria-label="Үндсэн навигаци">
-          <NavLink className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`} to="/" end>
-            Нүүр
-          </NavLink>
-          <NavLink className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`} to="/teachers">
-            Багш хайх
-          </NavLink>
-          {user ? (
-            <>
-              {(user.role === 'TEACHER' || user.role === 'STUDENT') && (
-                <NavLink
-                  className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`}
-                  to="/my-courses"
-                >
-                  Миний хичээлүүд
-                </NavLink>
-              )}
-              {user.role === 'TEACHER' && (
-                <NavLink
-                  className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`}
-                  to="/teacher/profile"
-                >
-                  Профайл
-                </NavLink>
-              )}
-              {user.role === 'ADMIN' && (
-                <NavLink
-                  className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`}
-                  to="/admin"
-                >
-                  Админ
-                </NavLink>
-              )}
+        {user ? (
+          <div className="shellTopbarActions" aria-label="Хэрэгслийн хэсэг">
+            <NavLink
+              className={({ isActive }) => `shellIconLink${isActive ? ' shellTopLinkActive' : ''}`}
+              to="/notifications"
+              aria-label="Мэдэгдэл"
+            >
+              <NotificationsIcon fontSize="small" />
+            </NavLink>
+            <button
+              type="button"
+              className="shellThemeBtn"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Гэрэл theme рүү шилжих' : 'Харанхуй theme рүү шилжих'}
+              title={isDark ? 'Гэрэл горим' : 'Харанхуй горим'}
+            >
+              {isDark ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+              {/*<span className="shellThemeLabel">{isDark ? 'Гэрэл' : 'Харанхуй'}</span>*/}
+            </button>
+            <span className="shellUserName muted">{user.fullName}</span>
+            <button className="shellLogoutBtn" type="button" onClick={logout}>
+              Гарах
+            </button>
+          </div>
+        ) : (
+          <nav className="shellTopNav" aria-label="Үндсэн навигаци">
+            {guestNavItems.map((item) => (
               <NavLink
+                key={item.to}
                 className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`}
-                to="/bookings"
+                to={item.to}
+                end={item.end}
               >
-                Захиалгууд
+                {item.label}
               </NavLink>
-              <NavLink
-                className={({ isActive }) => `shellIconLink${isActive ? ' shellTopLinkActive' : ''}`}
-                to="/notifications"
-                aria-label="Мэдэгдэл"
-              >
-                <NotificationsIcon fontSize="small" />
-              </NavLink>
-              <span className="shellUserName muted">{user.fullName}</span>
-              <button className="shellLogoutBtn" type="button" onClick={logout}>
-                Гарах
-              </button>
-            </>
-          ) : (
-            <>
-              <NavLink className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`} to="/login">
-                Нэвтрэх
-              </NavLink>
-              <NavLink
-                className={({ isActive }) => `shellTopLink${isActive ? ' shellTopLinkActive' : ''}`}
-                to="/register"
-              >
-                Бүртгүүлэх
-              </NavLink>
-            </>
-          )}
-        </nav>
+            ))}
+            <button
+              type="button"
+              className="shellThemeBtn"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Гэрэл theme рүү шилжих' : 'Харанхуй theme рүү шилжих'}
+              title={isDark ? 'Гэрэл горим' : 'Харанхуй горим'}
+            >
+              {isDark ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+              {/*<span className="shellThemeLabel">{isDark ? 'Гэрэл' : 'Харанхуй'}</span>*/}
+            </button>
+          </nav>
+        )}
       </header>
 
       {user && sidebarOpen ? <button type="button" className="shellSidebarBackdrop" aria-label="Цэс хаах" onClick={closeSidebar} /> : null}
@@ -129,83 +147,44 @@ export default function AppShell() {
           <aside className={`shellSidebar${sidebarOpen ? ' shellSidebarOpen' : ''}`} onClick={(e) => e.stopPropagation()}>
             <div className="shellSidebarSection">
               <div className="shellSidebarLabel">Үндсэн</div>
-              <NavLink
-                className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                to="/"
-                end
-                onClick={closeSidebar}
-              >
-                Нүүр
-              </NavLink>
-              {(user.role === 'TEACHER' || user.role === 'STUDENT') && (
+              {primaryNavItems.map((item) => (
                 <NavLink
+                  key={item.to}
                   className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/my-courses"
+                  to={item.to}
+                  end={item.end}
                   onClick={closeSidebar}
                 >
-                  Миний хичээлүүд
+                  {item.label}
                 </NavLink>
-              )}
-              {user.role === 'TEACHER' && (
-                <NavLink
-                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/teacher/profile"
-                  onClick={closeSidebar}
-                >
-                  Багшийн профайл
-                </NavLink>
-              )}
-              {user.role === 'STUDENT' && (
-                <NavLink
-                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/teachers"
-                  onClick={closeSidebar}
-                >
-                  Багш хайх
-                </NavLink>
-              )}
+              ))}
             </div>
             <div className="shellSidebarSection">
               <div className="shellSidebarLabel">Захиалга &amp; Мэдэгдэл</div>
-              <NavLink
-                className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                to="/bookings"
-                onClick={closeSidebar}
-              >
-                Захиалгууд
-              </NavLink>
-              <NavLink
-                className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                to="/notifications"
-                onClick={closeSidebar}
-              >
-                Мэдэгдлүүд
-              </NavLink>
+              {workflowNavItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
+                  to={item.to}
+                  onClick={closeSidebar}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
             </div>
             {user.role === 'TEACHER' ? (
               <div className="shellSidebarSection">
                 <div className="shellSidebarLabel">Багш</div>
-                <NavLink
-                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/teacher/schedule"
-                  onClick={closeSidebar}
-                >
-                  Хуваарь
-                </NavLink>
-                <NavLink
-                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/teacher/materials"
-                  onClick={closeSidebar}
-                >
-                  Материал
-                </NavLink>
-                <NavLink
-                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/teacher/quizzes"
-                  onClick={closeSidebar}
-                >
-                  Тестүүд
-                </NavLink>
+                {teacherNavItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
+                    to={item.to}
+                    onClick={closeSidebar}
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
               </div>
             ) : null}
             {user.role === 'ADMIN' ? (
@@ -213,10 +192,10 @@ export default function AppShell() {
                 <div className="shellSidebarLabel">Админ</div>
                 <NavLink
                   className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
-                  to="/admin"
+                  to={adminNavItems[0].to}
                   onClick={closeSidebar}
                 >
-                  Удирдлага
+                  {adminNavItems[0].label}
                 </NavLink>
               </div>
             ) : null}
