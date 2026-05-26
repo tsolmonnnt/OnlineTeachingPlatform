@@ -1,0 +1,8 @@
+# Root-level environment file used by docker-compose - keep out of git
+.env
+.env.local
+.env.*.local
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

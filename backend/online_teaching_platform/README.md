@@ -9,6 +9,24 @@ cd backend/online_teaching_platform
 mvn spring-boot:run
 ```
 
+## Deploy on Render (Docker)
+
+This module includes a production-ready `Dockerfile` for Render's Docker runtime.
+
+1. In Render, create a **Web Service** from this repository.
+2. Select **Docker** runtime and set the service **Root Directory** to:
+   - `backend/online_teaching_platform`
+3. Add required environment variables:
+   - `SPRING_DATASOURCE_URL`
+   - `SPRING_DATASOURCE_USERNAME`
+   - `SPRING_DATASOURCE_PASSWORD`
+   - `JWT_SECRET`
+   - optional Cloudinary variables (`CLOUDINARY_*`)
+4. Deploy. The container reads Render's `PORT` automatically (`server.port=${PORT}`).
+
+Health check suggestion:
+- `/actuator/health`
+
 **IntelliJ:** set the run configuration **Working directory** to this module folder (`…/backend/online_teaching_platform`), not the parent `backend` folder, so `.env` resolution and relative paths match command-line runs.
 
 ### PostgreSQL schema (Flyway + Hibernate)
