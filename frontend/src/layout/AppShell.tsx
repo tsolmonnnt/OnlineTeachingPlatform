@@ -87,7 +87,7 @@ export default function AppShell() {
             </button>
           ) : null}
           <Link className="shellBrand" to="/" onClick={closeSidebar}>
-            Онлайн Сургалтын Платформ
+            Цахим Сургалтын Платформ
           </Link>
         </div>
         {user ? (

@@ -37,31 +37,41 @@ export function FileUploadField({
   return (
     <div className="uploadField">
       <div className="uploadFieldLabel">{label}</div>
-      <label htmlFor={inputId} className={`uploadDropzone${file ? ' uploadDropzone-selected' : ''}`}>
-        <input
-          id={inputId}
-          className="uploadInput"
-          type="file"
-          accept={accept}
-          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-        />
-        <span className="uploadDropzoneIcon">
-          <UploadCloudIcon />
-        </span>
-        <span className="uploadDropzoneTitle">{file ? 'Өөр файл сонгох' : 'Файл сонгох'}</span>
-        <span className="uploadDropzoneHint">{helperText}</span>
-      </label>
+      <input
+        id={inputId}
+        className="uploadInput"
+        type="file"
+        accept={accept}
+        onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+      />
 
       {file ? (
         <div className="uploadFieldSelected">
+          <div className="uploadFieldSelectedHeader">
+            <div className="uploadFieldSelectedInfo">
+              <strong className="uploadFieldSelectedName">{file.name}</strong>
+              <span className="uploadFieldSelectedBadge">Шинэ файл</span>
+            </div>
+          </div>
           <FileUploadPreview file={file} />
           <div className="uploadFieldActions">
+            <label htmlFor={inputId} className="uploadActionLabel">
+              Солих
+            </label>
             <button type="button" className="btnGhost smallBtn" onClick={() => onFileChange(null)}>
-              Сонголтыг цэвэрлэх
+              Арилгах
             </button>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <label htmlFor={inputId} className="uploadDropzone">
+          <span className="uploadDropzoneIcon">
+            <UploadCloudIcon />
+          </span>
+          <span className="uploadDropzoneTitle">Файл сонгох</span>
+          <span className="uploadDropzoneHint">{helperText}</span>
+        </label>
+      )}
     </div>
   )
 }

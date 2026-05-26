@@ -33,9 +33,10 @@ export function FileUploadPreview({ file }: { file: File | null }) {
   if (file.type.startsWith('image/') && objectUrl) {
     return (
       <div className="filePreviewBox filePreviewBox-image">
-        <img src={objectUrl} alt="Сонгосон файлын урьдчилсан харагдац" className="filePreviewImg" />
-        <div className="filePreviewMeta">
-          <strong className="filePreviewName">{file.name}</strong>
+        <div className="filePreviewImageFrame">
+          <img src={objectUrl} alt="Сонгосон файлын урьдчилсан харагдац" className="filePreviewImg" />
+        </div>
+        <div className="filePreviewMeta filePreviewMeta-inline">
           <span className="muted small">
             {getDisplayType(file)} · {formatFileSize(file.size)}
           </span>
