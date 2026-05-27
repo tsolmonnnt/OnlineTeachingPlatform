@@ -7,6 +7,7 @@ import { TeacherAvatar } from '../components/TeacherAvatar'
 import { AlertBanner } from '../components/AlertBanner'
 import { EmptyState } from '../components/EmptyState'
 import { InfoList } from '../components/InfoList'
+import { MaterialOpenButton } from '../components/MaterialOpenButton'
 import { PageHeader } from '../components/PageHeader'
 import { SectionCard } from '../components/SectionCard'
 import { StatusPill } from '../components/StatusPill'
@@ -265,9 +266,7 @@ export default function TeacherDetailPage() {
                       </div>
                     </div>
                     {m.secureUrl ? (
-                      <a className="buttonLink" href={m.secureUrl} target="_blank" rel="noreferrer">
-                        Нээх
-                      </a>
+                      <MaterialOpenButton materialId={m.id} />
                     ) : (
                       <span className="muted small" title="Захиалга баталгаажсан сурагчид линк харагдана">
                         Нэвтэрсэн сурагчид нээгдэнэ

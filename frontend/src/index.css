@@ -1839,6 +1839,25 @@ a.quickActionBtn:hover {
   padding: 6px 10px;
 }
 
+.shellAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--ui-border, rgba(148, 163, 184, 0.35));
+}
+
+.shellAvatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(20, 184, 166, 0.2);
+  color: var(--ui-text, #e2e8f0);
+}
+
 .shellUserName {
   font-size: 13px;
   max-width: 140px;

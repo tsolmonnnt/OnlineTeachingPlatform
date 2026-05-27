@@ -9,6 +9,7 @@ import {
 import { AlertBanner } from '../components/AlertBanner'
 import { EmptyState } from '../components/EmptyState'
 import { FileUploadField } from '../components/FileUploadField'
+import { MaterialOpenButton } from '../components/MaterialOpenButton'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
 import { SectionCard } from '../components/SectionCard'
@@ -459,9 +460,7 @@ export default function TeacherSubjectPage() {
                 </div>
                 <div className="subjectResourceActions">
                   {material.secureUrl ? (
-                    <a className="buttonLink" href={material.secureUrl} target="_blank" rel="noreferrer">
-                      Нээх
-                    </a>
+                    <MaterialOpenButton materialId={material.id} />
                   ) : (
                     <span className="muted small">Линк олдсонгүй</span>
                   )}

@@ -17,11 +17,22 @@ function getDisplayType(file: File) {
   return extension ? extension.toUpperCase() : 'Файл'
 }
 
+const IMAGE_EXTENSION_PATTERN = /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i
+
+function isImageFile(file: File) {
+  if (file.type && file.type.startsWith('image/')) {
+    return true
+  }
+  return IMAGE_EXTENSION_PATTERN.test(file.name)
+}
+
 export function FileUploadPreview({ file }: { file: File | null }) {
+  const showImagePreview = file != null && isImageFile(file)
+
   const objectUrl = useMemo(() => {
-    if (!file || !file.type.startsWith('image/')) return null
+    if (!file || !showImagePreview) return null
     return URL.createObjectURL(file)
-  }, [file])
+  }, [file, showImagePreview])
 
   useEffect(() => {
     if (!objectUrl) return
@@ -30,7 +41,7 @@ export function FileUploadPreview({ file }: { file: File | null }) {
 
   if (!file) return null
 
-  if (file.type.startsWith('image/') && objectUrl) {
+  if (showImagePreview && objectUrl) {
     return (
       <div className="filePreviewBox filePreviewBox-image">
         <div className="filePreviewImageFrame">

@@ -1,9 +1,11 @@
 package com.tsolmon.online_teaching_platform.material.api;
 
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
+import com.tsolmon.online_teaching_platform.material.api.dto.MaterialDownloadUrlResponse;
 import com.tsolmon.online_teaching_platform.material.api.dto.TeachingMaterialResponse;
 import com.tsolmon.online_teaching_platform.material.application.MaterialService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +17,24 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MaterialController {
     private final MaterialService materialService;
+
+    @GetMapping("/{materialId}/download-url")
+    public MaterialDownloadUrlResponse downloadUrl(
+            @PathVariable Long materialId,
+            Authentication authentication
+    ) {
+        AuthUser viewer = (AuthUser) authentication.getPrincipal();
+        return materialService.resolveDownloadUrl(materialId, viewer);
+    }
+
+    @GetMapping("/{materialId}/download")
+    public ResponseEntity<Void> download(
+            @PathVariable Long materialId,
+            Authentication authentication
+    ) {
+        AuthUser viewer = (AuthUser) authentication.getPrincipal();
+        return materialService.downloadRedirect(materialId, viewer);
+    }
 
     @GetMapping("/teacher/{teacherProfileId}")
     public List<TeachingMaterialResponse> listForTeacher(

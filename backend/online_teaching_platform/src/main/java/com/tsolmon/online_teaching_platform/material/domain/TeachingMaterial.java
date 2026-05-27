@@ -32,6 +32,14 @@ public class TeachingMaterial {
     @Column(nullable = false, length = 120)
     private String cloudinaryPublicId;
 
+    @Column(length = 20)
+    private String cloudinaryResourceType;
+
+    @Column(length = 20)
+    private String cloudinaryDeliveryType;
+
+    private Long cloudinaryVersion;
+
     @Column(nullable = false, length = 1024)
     private String secureUrl;
 

@@ -10,9 +10,11 @@ import com.tsolmon.online_teaching_platform.material.api.dto.TeachingMaterialRes
 import com.tsolmon.online_teaching_platform.material.domain.TeachingMaterial;
 import com.tsolmon.online_teaching_platform.material.domain.TeachingMaterialRepository;
 import com.tsolmon.online_teaching_platform.material.infrastructure.CloudinaryProperties;
+import com.tsolmon.online_teaching_platform.material.infrastructure.CloudinaryUrlService;
 import com.tsolmon.online_teaching_platform.teacher.domain.TeacherProfile;
 import com.tsolmon.online_teaching_platform.teacher.domain.TeacherRepository;
 import com.tsolmon.online_teaching_platform.user.entity.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -21,11 +23,14 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +46,17 @@ class MaterialServiceTest {
     private CourseAccessService courseAccessService;
     @Mock
     private Cloudinary cloudinary;
+    @Mock
+    private CloudinaryUrlService cloudinaryUrlService;
+
+    @BeforeEach
+    void stubCloudinaryUrlService() {
+        lenient().when(cloudinaryUrlService.deliveryUrl(any())).thenAnswer(inv -> {
+            TeachingMaterial m = inv.getArgument(0);
+            return m != null ? m.getSecureUrl() : null;
+        });
+        lenient().when(cloudinaryUrlService.destroyOptions(any())).thenReturn(Map.of());
+    }
 
     @Test
     void listForTeacherOnlyIncludesSecureUrlForOwnerOrStudentWithCourseAccess() {
@@ -133,7 +149,8 @@ class MaterialServiceTest {
                 courseSubjectRepository,
                 courseAccessService,
                 cloudinary,
-                properties
+                properties,
+                cloudinaryUrlService
         );
     }
 

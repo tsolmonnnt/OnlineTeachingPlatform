@@ -77,6 +77,23 @@ Never commit API secrets to git — use environment variables or a local `.env` 
 
 Without Cloudinary credentials, material upload returns HTTP 503 with a clear message.
 
+### PDF and non-image materials
+
+PDFs are uploaded to Cloudinary as **`raw`** assets (not `auto` / `image`), with **`type: upload`** and **`access_mode: public`**.
+
+- In Cloudinary **Settings → Security**, enable **Allow delivery of PDF and ZIP files** (required for PDF viewing in the browser).
+- PDFs open **inline** in the browser PDF viewer (not forced download). Delivery URLs are normalized to end with **`.pdf`** when Cloudinary stored the asset without an extension (e.g. auto-generated public IDs from upload presets).
+- New PDF uploads use **`use_filename`** + **`unique_filename`** so Cloudinary keeps the original **`.pdf`** suffix in `public_id`.
+- Public materials use the stored **`secure_url`** from upload when it already ends with `.pdf` (no re-signing). Only **`authenticated`** assets are signed at read time (requires **`CLOUDINARY_API_KEY`** and **`CLOUDINARY_API_SECRET`**).
+- The UI opens files via **`GET /api/materials/{id}/download-url`** (JSON `{ "url": "..." }`, requires JWT).
+- If you use **`CLOUDINARY_UPLOAD_PRESET`**, set **Access mode** to **Public** (not Authenticated), or leave the preset unset for server-side uploads.
+- **Legacy PDFs** uploaded as authenticated or under `/image/upload/...pdf` may need a **re-upload** after deploy.
+
+### Profile images
+
+- Any signed-in user: **`POST /api/auth/me/avatar`** (multipart `file`) → `users.avatar_url`.
+- Teachers: existing **`POST /api/teachers/me/avatar`** also updates `users.avatar_url`.
+
 ## API docs
 
 With the app running:

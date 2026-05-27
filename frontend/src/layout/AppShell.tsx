@@ -14,6 +14,13 @@ type ShellNavItem = {
   end?: boolean
 }
 
+function userInitials(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 function getFlashMessage(state: unknown): string | null {
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
     return null
@@ -52,6 +59,7 @@ export default function AppShell() {
     { to: '/teacher/materials', label: 'Материал' },
     { to: '/teacher/quizzes', label: 'Тестүүд' },
   ]
+  const studentNavItems: ShellNavItem[] = [{ to: '/account', label: 'Миний профайл' }]
   const adminNavItems: ShellNavItem[] = [{ to: '/admin', label: 'Удирдлага' }]
 
   if (user?.role === 'TEACHER' || user?.role === 'STUDENT') {
@@ -109,6 +117,13 @@ export default function AppShell() {
               {isDark ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
               {/*<span className="shellThemeLabel">{isDark ? 'Гэрэл' : 'Харанхуй'}</span>*/}
             </button>
+            {user.avatarUrl ? (
+              <img className="shellAvatar" src={user.avatarUrl} alt="" />
+            ) : (
+              <span className="shellAvatar shellAvatarFallback" aria-hidden>
+                {userInitials(user.fullName)}
+              </span>
+            )}
             <span className="shellUserName muted">{user.fullName}</span>
             <button className="shellLogoutBtn" type="button" onClick={logout}>
               Гарах
@@ -187,9 +202,31 @@ export default function AppShell() {
                 ))}
               </div>
             ) : null}
+            {user.role === 'STUDENT' ? (
+              <div className="shellSidebarSection">
+                <div className="shellSidebarLabel">Профайл</div>
+                {studentNavItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
+                    to={item.to}
+                    onClick={closeSidebar}
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
             {user.role === 'ADMIN' ? (
               <div className="shellSidebarSection">
                 <div className="shellSidebarLabel">Админ</div>
+                <NavLink
+                  className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
+                  to="/account"
+                  onClick={closeSidebar}
+                >
+                  Миний профайл
+                </NavLink>
                 <NavLink
                   className={({ isActive }) => `shellSideLink${isActive ? ' shellSideLinkActive' : ''}`}
                   to={adminNavItems[0].to}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../auth/AuthContext'
 import { fetchJson, postFormData } from '../lib/api'
-import type { TeacherProfile } from '../auth/types'
+import type { TeacherProfile, User } from '../auth/types'
 import { AlertBanner } from '../components/AlertBanner'
 import { PageHeader } from '../components/PageHeader'
 import { SectionCard } from '../components/SectionCard'
@@ -19,12 +20,14 @@ function joinCsv(list: string[] | null | undefined) {
 }
 
 export default function TeacherProfilePage() {
+  const { user, refreshMe } = useAuth()
   const [profile, setProfile] = useState<TeacherProfile | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
+  const [fullName, setFullName] = useState('')
   const [headline, setHeadline] = useState('')
   const [bio, setBio] = useState('')
   const [subjectsCsv, setSubjectsCsv] = useState('')
@@ -78,6 +81,10 @@ export default function TeacherProfilePage() {
   }, [avatarPick])
 
   useEffect(() => {
+    setFullName(user?.fullName ?? '')
+  }, [user?.fullName])
+
+  useEffect(() => {
     ;(async () => {
       setError(null)
       setSuccess(null)
@@ -107,12 +114,22 @@ export default function TeacherProfilePage() {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+    const trimmedName = fullName.trim()
+    if (trimmedName.length < 2) {
+      setError('Овог нэр хамгийн багадаа 2 тэмдэгт байх ёстой.')
+      return
+    }
     setIsSaving(true)
     try {
+      await fetchJson<User>('/api/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ fullName: trimmedName }),
+      })
       const saved = await fetchJson<TeacherProfile>('/api/teachers/me', {
         method: 'PUT',
         body: JSON.stringify(payload),
       })
+      await refreshMe()
       setProfile(saved)
       setSuccess('Профайл амжилттай хадгалагдлаа.')
     } catch (err) {
@@ -234,6 +251,20 @@ export default function TeacherProfilePage() {
           </SectionCard>
 
           <div className="profileEditorMain">
+            <SectionCard title="Хувийн мэдээлэл" subtitle="Таны нэр платформ дээр харагдана.">
+              <div className="form profileFormGrid">
+                <label className="fieldSpanFull">
+                  Овог нэр
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    maxLength={120}
+                    required
+                  />
+                </label>
+              </div>
+            </SectionCard>
+
             <SectionCard title="Ерөнхий танилцуулга" subtitle="Сурагчдад хамгийн түрүүнд харагдах мэдээлэл.">
               <div className="form profileFormGrid">
                 <label>

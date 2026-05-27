@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/public/stats").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/me/avatar").authenticated()
 
                         .requestMatchers(HttpMethod.GET, "/api/dashboard/teacher").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.GET, "/api/dashboard/student").hasRole("STUDENT")
@@ -77,6 +79,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/reviews").hasRole("STUDENT")
 
                         .requestMatchers(HttpMethod.GET, "/api/materials/teacher/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/materials/*/download").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/materials/*/download-url").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/materials").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.DELETE, "/api/materials/**").hasRole("TEACHER")
 
@@ -120,6 +124,7 @@ public class SecurityConfig {
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Location"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

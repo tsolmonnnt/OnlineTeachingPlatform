@@ -28,6 +28,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(length = 1024)
+    private String avatarUrl;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

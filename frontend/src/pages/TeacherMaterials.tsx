@@ -7,6 +7,7 @@ import { EmptyState } from '../components/EmptyState'
 import { FileUploadField } from '../components/FileUploadField'
 import { PageHeader } from '../components/PageHeader'
 import { SectionCard } from '../components/SectionCard'
+import { MaterialOpenButton } from '../components/MaterialOpenButton'
 import { StatusPill } from '../components/StatusPill'
 import type { CourseSubject, TeachingMaterial } from '../auth/types'
 import { getFriendlyErrorMessage } from '../lib/errorMessages'
@@ -238,9 +239,7 @@ export default function TeacherMaterialsPage() {
                 </div>
                 <div className="subjectResourceActions">
                   {material.secureUrl ? (
-                    <a className="buttonLink" href={material.secureUrl} target="_blank" rel="noreferrer">
-                      Нээх / татах
-                    </a>
+                    <MaterialOpenButton materialId={material.id} label="Нээх / татах" />
                   ) : (
                     <span className="muted small">Линк олдсонгүй</span>
                   )}

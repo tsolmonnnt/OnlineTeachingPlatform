@@ -17,6 +17,7 @@ import TeacherQuizzesPage from './pages/TeacherQuizzes'
 import TeacherSchedulePage from './pages/TeacherSchedule'
 import MyCoursesPage from './pages/MyCourses'
 import TeacherSubjectPage from './pages/TeacherSubjectPage'
+import AccountProfilePage from './pages/AccountProfile'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path="/my-courses" element={<MyCoursesPage />} />
           <Route path="/bookings" element={<BookingsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/account" element={<AccountProfilePage />} />
         </Route>
 
         <Route element={<ProtectedRoute requireRole="ADMIN" />}>

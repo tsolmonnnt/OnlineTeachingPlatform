@@ -112,6 +112,9 @@ public class TeacherService {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upload did not return a URL");
             }
             profile.setAvatarUrl(secureUrl);
+            if (profile.getUser() != null) {
+                profile.getUser().setAvatarUrl(secureUrl);
+            }
             TeacherProfile saved = teacherRepository.save(profile);
             return TeacherProfileResponse.from(saved);
         } catch (IOException e) {
