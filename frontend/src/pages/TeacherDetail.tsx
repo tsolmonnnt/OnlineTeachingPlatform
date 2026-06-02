@@ -11,12 +11,34 @@ import { MaterialOpenButton } from '../components/MaterialOpenButton'
 import { PageHeader } from '../components/PageHeader'
 import { SectionCard } from '../components/SectionCard'
 import { StatusPill } from '../components/StatusPill'
-import type { AvailabilitySlot, Booking, QuizSummary, ReviewItem, TeacherDetail, TeachingMaterial } from '../auth/types'
+import { WeeklyAvailabilityCalendar } from '../components/WeeklyAvailabilityCalendar'
+import type {
+  AvailabilitySlot,
+  Booking,
+  BookingType,
+  QuizSummary,
+  ReviewItem,
+  TeacherDetail,
+  TeachingMaterial,
+} from '../auth/types'
 import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 function formatPrice(value: TeacherDetail['hourlyRate']) {
   if (value == null || value === '') return 'Тохиролцоно'
   return `${value}₮ / цаг`
+}
+
+function findActivePackageBooking(bookings: Booking[], teacherId: number): Booking | null {
+  return (
+    bookings.find(
+      (b) =>
+        b.teacherId === teacherId &&
+        b.bookingType === 'PACKAGE_LESSON' &&
+        !b.parentBookingId &&
+        b.status !== 'CANCELLED' &&
+        (b.packageBookedLessons ?? 0) < (b.packageTotalLessons ?? 0),
+    ) ?? null
+  )
 }
 
 export default function TeacherDetailPage() {
@@ -32,6 +54,8 @@ export default function TeacherDetailPage() {
 
   const [subject, setSubject] = useState('')
   const [note, setNote] = useState('')
+  const [bookingType, setBookingType] = useState<BookingType>('SINGLE_LESSON')
+  const [packageTotalLessons, setPackageTotalLessons] = useState(4)
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null)
   const [reviewBookingId, setReviewBookingId] = useState<number | null>(null)
   const [reviewRating, setReviewRating] = useState(5)
@@ -44,11 +68,20 @@ export default function TeacherDetailPage() {
   const activeTeacherId = Number(teacherId)
 
   const selectableSlots = useMemo(() => slots.filter((s) => !s.booked), [slots])
+  const selectedSlot = useMemo(
+    () => slots.find((slot) => slot.id === selectedSlotId) ?? null,
+    [slots, selectedSlotId],
+  )
+
+  const activePackageBooking = useMemo(
+    () => (user?.role === 'STUDENT' ? findActivePackageBooking(myBookings, activeTeacherId) : null),
+    [myBookings, user?.role, activeTeacherId],
+  )
 
   const reviewableBookings = useMemo(() => {
     if (user?.role !== 'STUDENT' || !activeTeacherId) return []
     return myBookings.filter(
-      (b) => b.status === 'CONFIRMED' && b.teacherId === activeTeacherId,
+      (b) => b.canReview && b.teacherId === activeTeacherId,
     )
   }, [myBookings, user?.role, activeTeacherId])
 
@@ -112,22 +145,42 @@ export default function TeacherDetailPage() {
       setError('Хичээлийн нэр оруулна уу')
       return
     }
+    if (!activePackageBooking && bookingType === 'PACKAGE_LESSON' && packageTotalLessons < 2) {
+      setError('Багц хичээлд хамгийн багадаа 2 хичээл заана')
+      return
+    }
 
     setError(null)
     setSuccess(null)
     try {
+      const payload: Record<string, unknown> = {
+        teacherId: activeTeacherId,
+        slotId: selectedSlotId,
+        subject: subject.trim(),
+        note: note.trim() || null,
+      }
+      if (activePackageBooking) {
+        payload.parentBookingId = activePackageBooking.id
+      } else {
+        payload.bookingType = bookingType
+        if (bookingType === 'PACKAGE_LESSON') {
+          payload.packageTotalLessons = packageTotalLessons
+        }
+      }
+
       const booking = await fetchJson<Booking>('/api/bookings', {
         method: 'POST',
-        body: JSON.stringify({
-          teacherId: activeTeacherId,
-          slotId: selectedSlotId,
-          subject: subject.trim(),
-          note: note.trim() || null,
-        }),
+        body: JSON.stringify(payload),
       })
-      setSuccess(`Захиалга амжилттай. Төлөв: ${booking.status}`)
+      const typeLabel =
+        activePackageBooking || booking.bookingType === 'PACKAGE_LESSON' ? 'багц' : 'нэг хичээл'
+      setSuccess(`Захиалга амжилттай (${typeLabel}). Төлөв: ${booking.status}`)
       setSlots((prev) => prev.map((s) => (s.id === selectedSlotId ? { ...s, booked: true } : s)))
       setSelectedSlotId(null)
+      if (user?.role === 'STUDENT') {
+        const bookings = await fetchJson<Booking[]>('/api/bookings/me', { method: 'GET' })
+        setMyBookings(bookings)
+      }
     } catch (err) {
       setError(getFriendlyErrorMessage(err, 'Захиалга үүсгэх үед алдаа гарлаа.'))
     }
@@ -379,22 +432,63 @@ export default function TeacherDetailPage() {
             subtitle="Сурагч эрхтэй нэвтэрсэн үед доорх сул цагуудаас сонгон захиална."
             className="bookingSidebar"
           >
-            {selectableSlots.length ? (
+            {slots.length ? (
               <>
-                <label>
-                  Сул цаг
-                  <select
-                    value={selectedSlotId ?? ''}
-                    onChange={(e) => setSelectedSlotId(e.target.value ? Number(e.target.value) : null)}
-                  >
-                    <option value="">Сонгох</option>
-                    {selectableSlots.map((slot) => (
-                      <option key={slot.id} value={slot.id}>
-                        {slot.courseSubjectName ?? 'Хичээл'} · {formatLocalDateTime(slot.startTime)} – {formatLocalDateTime(slot.endTime)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <WeeklyAvailabilityCalendar
+                  mode="student"
+                  slots={slots}
+                  onSelectSlot={(slot) => {
+                    if (slot.booked) return
+                    setSelectedSlotId(slot.id)
+                  }}
+                />
+
+                <div className="muted small" style={{ marginTop: 8 }}>
+                  {selectedSlot
+                    ? `Сонгосон цаг: ${selectedSlot.courseSubjectName ?? 'Хичээл'} · ${formatLocalDateTime(selectedSlot.startTime)} – ${formatLocalDateTime(selectedSlot.endTime)}`
+                    : 'Calendar дээр ногоон (сул) слот дээр дарж сонгоно уу.'}
+                </div>
+
+                {activePackageBooking ? (
+                  <div className="card" style={{ padding: 12, marginTop: 8 }}>
+                    <p className="muted small" style={{ margin: 0 }}>
+                      Идэвхтэй багц: {activePackageBooking.packageCompletedLessons ?? 0}/
+                      {activePackageBooking.packageTotalLessons ?? 0} хичээл дууссан. Үлдсэн эрх:{' '}
+                      {Math.max(
+                        0,
+                        (activePackageBooking.packageTotalLessons ?? 0) -
+                          (activePackageBooking.packageBookedLessons ?? 0),
+                      )}{' '}
+                      / {activePackageBooking.packageTotalLessons ?? 0}. Дараагийн цагаа сонгоно уу.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <label>
+                      Захиалгын төрөл
+                      <select
+                        value={bookingType}
+                        onChange={(e) => setBookingType(e.target.value as BookingType)}
+                      >
+                        <option value="SINGLE_LESSON">Нэг хичээл</option>
+                        <option value="PACKAGE_LESSON">Багц хичээл</option>
+                      </select>
+                    </label>
+
+                    {bookingType === 'PACKAGE_LESSON' ? (
+                      <label>
+                        Нийт хичээл (багц эрх)
+                        <input
+                          type="number"
+                          min={2}
+                          max={30}
+                          value={packageTotalLessons}
+                          onChange={(e) => setPackageTotalLessons(Number(e.target.value))}
+                        />
+                      </label>
+                    ) : null}
+                  </>
+                )}
 
                 <label>
                   Хичээлийн нэр
@@ -414,8 +508,12 @@ export default function TeacherDetailPage() {
             )}
 
             <div className="bookingSidebarFooter">
-              <button type="button" onClick={onBook} disabled={user?.role !== 'STUDENT' || !selectableSlots.length}>
-                {user?.role === 'STUDENT' ? 'Захиалга илгээх' : 'Сурагч эрхээр нэвтэрч захиална'}
+              <button type="button" onClick={onBook} disabled={user?.role !== 'STUDENT' || !selectableSlots.length || selectedSlotId == null}>
+                {user?.role !== 'STUDENT'
+                  ? 'Сурагч эрхээр нэвтэрч захиална'
+                  : activePackageBooking
+                    ? 'Багц үргэлжлүүлэх'
+                    : 'Захиалга илгээх'}
               </button>
             </div>
           </SectionCard>

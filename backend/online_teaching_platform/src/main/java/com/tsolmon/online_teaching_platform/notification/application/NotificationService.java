@@ -2,6 +2,7 @@ package com.tsolmon.online_teaching_platform.notification.application;
 
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
 import com.tsolmon.online_teaching_platform.notification.api.dto.NotificationResponse;
+import com.tsolmon.online_teaching_platform.notification.api.dto.UnreadCountResponse;
 import com.tsolmon.online_teaching_platform.notification.domain.Notification;
 import com.tsolmon.online_teaching_platform.notification.domain.NotificationRepository;
 import com.tsolmon.online_teaching_platform.user.entity.User;
@@ -30,6 +31,12 @@ public class NotificationService {
         notification.setTitle(title);
         notification.setMessage(message);
         notificationRepository.save(notification);
+    }
+
+    @Transactional(readOnly = true)
+    public UnreadCountResponse getUnreadCount(AuthUser authUser) {
+        long count = notificationRepository.countByRecipientUser_IdAndIsReadFalse(authUser.id());
+        return new UnreadCountResponse(count);
     }
 
     @Transactional(readOnly = true)

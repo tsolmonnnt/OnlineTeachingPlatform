@@ -6,6 +6,7 @@ import { PageHeader } from '../components/PageHeader'
 import { SectionCard } from '../components/SectionCard'
 import { StatusPill } from '../components/StatusPill'
 import type { NotificationItem } from '../auth/types'
+import { notifyNotificationsChanged } from '../hooks/useUnreadNotificationCount'
 import { getFriendlyErrorMessage } from '../lib/errorMessages'
 
 export default function NotificationsPage() {
@@ -34,6 +35,7 @@ export default function NotificationsPage() {
     try {
       const updated = await fetchJson<NotificationItem>(`/api/notifications/${id}/read`, { method: 'PATCH' })
       setItems((prev) => prev.map((n) => (n.id === id ? updated : n)))
+      notifyNotificationsChanged()
     } catch (err) {
       setError(getFriendlyErrorMessage(err, 'Мэдэгдлийг шинэчлэх үед алдаа гарлаа.'))
     }

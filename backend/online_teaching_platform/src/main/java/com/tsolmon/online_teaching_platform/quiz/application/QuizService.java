@@ -147,10 +147,11 @@ public class QuizService {
         if (quiz.getCourseSubject() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Quiz is not linked to a course");
         }
-        if (!courseAccessService.hasConfirmedAccess(
+        if (!courseAccessService.hasCourseAccess(
                 student.id(),
                 quiz.getTeacherProfile().getId(),
-                quiz.getCourseSubject().getId())) {
+                quiz.getCourseSubject().getId(),
+                java.time.LocalDateTime.now())) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "You need a confirmed booking for this course with this teacher"

@@ -44,6 +44,11 @@ class QuizRequirementsIntegrationTest extends RequirementsIntegrationTestSupport
         RegisteredUser noAccessStudent = registerUser("No Quiz Access", "quiz.no.access@test.mn", "STUDENT");
         assertThat(exchangeStatus("GET", "/api/quizzes/" + quizId + "/public", noAccessStudent.token(), null)).isEqualTo(403);
 
+        // A confirmed-but-not-yet-started lesson must not grant quiz access.
+        assertThat(exchangeStatus("GET", "/api/quizzes/" + quizId + "/public", access.studentToken(), null)).isEqualTo(403);
+
+        // After attending the lesson (within the access window), the student can open the quiz.
+        attendBookingNow(access.slotId());
         String publicQuizBody = exchange("GET", "/api/quizzes/" + quizId + "/public", access.studentToken(), null);
         JsonNode publicQuiz = objectMapper.readTree(publicQuizBody);
         JsonNode questions = publicQuiz.get("questions");

@@ -165,13 +165,21 @@ export type AvailabilitySlot = {
   courseSubjectName: string | null
 }
 
-export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED'
+export type BookingType = 'SINGLE_LESSON' | 'PACKAGE_LESSON'
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'REVIEWED' | 'CANCELLED'
 
 export type Booking = {
   id: number
   status: BookingStatus
+  bookingType: BookingType
   subject: string
   note: string | null
+  meetingLink: string | null
+  reminderSent: boolean
+  parentBookingId: number | null
+  packageTotalLessons: number | null
+  packageCompletedLessons: number | null
+  packageBookedLessons: number | null
   studentUserId: number
   studentName: string
   teacherId: number
@@ -181,6 +189,8 @@ export type Booking = {
   slotEndTime: string
   courseSubjectId: number | null
   courseSubjectName: string | null
+  canReview: boolean
+  reviewDeadline: string | null
   createdAt: string
   updatedAt: string
 }

@@ -6,9 +6,10 @@ type ModalProps = {
   onClose: () => void
   children: React.ReactNode
   footer?: React.ReactNode
+  wide?: boolean
 }
 
-export function Modal({ title, isOpen, onClose, children, footer }: ModalProps) {
+export function Modal({ title, isOpen, onClose, children, footer, wide = false }: ModalProps) {
   useEffect(() => {
     if (!isOpen) return
     const prev = document.body.style.overflow
@@ -28,7 +29,7 @@ export function Modal({ title, isOpen, onClose, children, footer }: ModalProps) 
   return (
     <div className="modalBackdrop" role="presentation" onClick={onClose}>
       <div
-        className="modalPanel"
+        className={`modalPanel${wide ? ' modalPanelWide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

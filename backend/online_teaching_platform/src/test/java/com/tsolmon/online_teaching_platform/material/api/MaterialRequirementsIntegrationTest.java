@@ -38,6 +38,12 @@ class MaterialRequirementsIntegrationTest extends RequirementsIntegrationTestSup
         String ownerBody = exchange("GET", "/api/materials/teacher/" + access.teacherProfileId(), access.teacherToken(), null);
         assertThat(objectMapper.readTree(ownerBody).get(0).get("secureUrl").asText()).contains("cloudinary.com");
 
+        // Before the lesson has started, the confirmed booking alone does not grant access.
+        String beforeLessonBody = exchange("GET", "/api/materials/teacher/" + access.teacherProfileId(), access.studentToken(), null);
+        assertThat(objectMapper.readTree(beforeLessonBody).get(0).get("secureUrl").isNull()).isTrue();
+
+        // Once the lesson has been attended (within the window), the student gets access.
+        attendBookingNow(access.slotId());
         String studentBody = exchange("GET", "/api/materials/teacher/" + access.teacherProfileId(), access.studentToken(), null);
         assertThat(objectMapper.readTree(studentBody).get(0).get("secureUrl").asText()).contains("cloudinary.com");
     }

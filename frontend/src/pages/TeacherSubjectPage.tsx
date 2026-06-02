@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchJson, postFormData } from '../lib/api'
-import {
-  apiDateTimeToDatetimeLocalValue,
-  datetimeLocalInputToApi,
-  parseLocalDateTime,
-} from '../lib/datetime'
+import { ApiError, fetchJson, postFormData } from '../lib/api'
+import { calendarSelectionToApiDateTime, parseLocalDateTime } from '../lib/datetime'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { WeeklyAvailabilityCalendar } from '../components/WeeklyAvailabilityCalendar'
+import type { CalendarSlotSelection } from '../components/WeeklyAvailabilityCalendar'
 import { AlertBanner } from '../components/AlertBanner'
 import { EmptyState } from '../components/EmptyState'
 import { FileUploadField } from '../components/FileUploadField'
@@ -99,9 +98,10 @@ export default function TeacherSubjectPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [slotModalOpen, setSlotModalOpen] = useState(false)
-  const [editingSlotId, setEditingSlotId] = useState<number | null>(null)
-  const [slotStartTime, setSlotStartTime] = useState('')
+  const [calendarModalOpen, setCalendarModalOpen] = useState(false)
+  const [calendarRange, setCalendarRange] = useState<{ start: Date; end: Date } | null>(null)
+  const [slotPendingDelete, setSlotPendingDelete] = useState<AvailabilitySlot | null>(null)
+  const [isDeletingSlot, setIsDeletingSlot] = useState(false)
 
   const [materialModalOpen, setMaterialModalOpen] = useState(false)
   const [matTitle, setMatTitle] = useState('')
@@ -147,62 +147,52 @@ export default function TeacherSubjectPage() {
     void refresh()
   }, [refresh])
 
-  function openAddSlot() {
-    setEditingSlotId(null)
-    setSlotStartTime('')
-    setSlotModalOpen(true)
+  const calendarSlots = useMemo(() => {
+    if (!calendarRange) return slots
+    return slots.filter((slot) => {
+      const start = parseLocalDateTime(slot.startTime)
+      return start >= calendarRange.start && start < calendarRange.end
+    })
+  }, [slots, calendarRange])
+
+  function openCalendarModal() {
+    setCalendarModalOpen(true)
   }
 
-  function openEditSlot(slot: AvailabilitySlot) {
-    if (slot.booked) return
-    setEditingSlotId(slot.id)
-    setSlotStartTime(apiDateTimeToDatetimeLocalValue(slot.startTime))
-    setSlotModalOpen(true)
-  }
-
-  async function submitSlot(e: React.FormEvent) {
-    e.preventDefault()
+  async function createSlot(selection: CalendarSlotSelection) {
     setError(null)
     setSuccess(null)
-    if (!slotStartTime) {
-      setError('Эхлэх цаг оруулна уу')
-      return
-    }
+    if (!Number.isFinite(subjectId)) return
     const payload = JSON.stringify({
-      startTime: datetimeLocalInputToApi(slotStartTime),
+      startTime: calendarSelectionToApiDateTime(selection.startStr, selection.start),
       courseSubjectId: subjectId,
     })
     try {
-      if (editingSlotId != null) {
-        await fetchJson<AvailabilitySlot>(`/api/schedules/me/${editingSlotId}`, {
-          method: 'PUT',
-          body: payload,
-        })
-      } else {
-        await fetchJson<AvailabilitySlot>('/api/schedules/me', {
-          method: 'POST',
-          body: payload,
-        })
-      }
-      setSlotModalOpen(false)
-      setEditingSlotId(null)
-      setSlotStartTime('')
-      await refresh()
-      setSuccess(editingSlotId != null ? 'Слот амжилттай шинэчлэгдлээ.' : 'Шинэ слот амжилттай нэмэгдлээ.')
+      const created = await fetchJson<AvailabilitySlot>('/api/schedules/me', {
+        method: 'POST',
+        body: payload,
+      })
+      setSlots((prev) => [...prev, created].sort((a, b) => a.startTime.localeCompare(b.startTime)))
+      setSuccess('Шинэ слот амжилттай нэмэгдлээ.')
     } catch (err) {
-      setError(getFriendlyErrorMessage(err, 'Слот хадгалах үед алдаа гарлаа.'))
+      if (err instanceof ApiError) setError(err.message)
+      else setError('Цагийн слот нэмэх үед алдаа гарлаа.')
     }
   }
 
   async function deleteSlot(slotId: number) {
     setError(null)
     setSuccess(null)
+    setIsDeletingSlot(true)
     try {
       await fetchJson<void>(`/api/schedules/me/${slotId}`, { method: 'DELETE' })
-      await refresh()
+      setSlots((prev) => prev.filter((s) => s.id !== slotId))
+      setSlotPendingDelete(null)
       setSuccess('Слот амжилттай устгагдлаа.')
     } catch (err) {
       setError(getFriendlyErrorMessage(err, 'Слот устгах үед алдаа гарлаа.'))
+    } finally {
+      setIsDeletingSlot(false)
     }
   }
 
@@ -359,7 +349,7 @@ export default function TeacherSubjectPage() {
       </div>
 
       <section className="quickActions" aria-label="Хурдан үйлдэл">
-        <button type="button" className="quickActionBtn" onClick={openAddSlot}>
+        <button type="button" className="quickActionBtn" onClick={openCalendarModal}>
           <span className="quickActionIcon" aria-hidden>
             <CalendarIcon />
           </span>
@@ -384,25 +374,15 @@ export default function TeacherSubjectPage() {
 
       <SectionCard
         title="Сул цагууд"
-        subtitle="Оюутнууд энэ хичээлээр цаг захиалах боломжтой слотуудаа эндээс удирдана."
+        subtitle="30 минутын слотуудыг долоо хоногийн каленараар нэмж, устгана (06:00–22:00)."
         actions={
-          <button type="button" className="btnGhost" onClick={openAddSlot}>
-            Шинэ слот
+          <button type="button" className="btnGhost" onClick={openCalendarModal}>
+            Календар нээх
           </button>
         }
       >
-        {!slots.length ? (
-          <EmptyState
-            title="Сул цаг үүсээгүй байна"
-            description="Хичээлээ захиалгад нээхийн тулд эхний боломжит цагаа эндээс нэмнэ үү."
-            action={
-              <button type="button" onClick={openAddSlot}>
-                Цаг нэмэх
-              </button>
-            }
-          />
-        ) : (
-          <div className="slotCardGrid">
+        {slots.length ? (
+          <div className="slotCardGrid subjectSlotSummary">
             {slots.map((slot) => {
               const { day, range } = formatSlotCard(slot)
               return (
@@ -416,22 +396,22 @@ export default function TeacherSubjectPage() {
                     <span>{range}</span>
                   </div>
                   <div className="slotCardMeta muted small">
-                    {slot.booked ? 'Сурагч захиалсан тул зөвхөн харах боломжтой.' : 'Энэ слотыг засах, устгах боломжтой.'}
+                    {slot.booked ? 'Сурагч захиалсан.' : 'Календар дээр засварлах боломжтой.'}
                   </div>
-                  {!slot.booked ? (
-                    <div className="slotCardActions">
-                      <button type="button" className="btnGhost smallBtn" onClick={() => openEditSlot(slot)}>
-                        Засах
-                      </button>
-                      <button type="button" className="btnGhost smallBtn danger" onClick={() => void deleteSlot(slot.id)}>
-                        Устгах
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               )
             })}
           </div>
+        ) : (
+          <EmptyState
+            title="Сул цаг үүсээгүй байна"
+            description="Хичээлээ захиалгад нээхийн тулд календар дээр эхний боломжит цагаа сонгоно уу."
+            action={
+              <button type="button" onClick={openCalendarModal}>
+                Цаг нэмэх
+              </button>
+            }
+          />
         )}
       </SectionCard>
 
@@ -532,28 +512,41 @@ export default function TeacherSubjectPage() {
       </SectionCard>
 
       <Modal
-        title={editingSlotId != null ? 'Слот засах' : 'Шинэ слот'}
-        isOpen={slotModalOpen}
-        onClose={() => {
-          setSlotModalOpen(false)
-          setEditingSlotId(null)
-          setSlotStartTime('')
-        }}
+        title="Цаг нэмэх"
+        isOpen={calendarModalOpen}
+        wide
+        onClose={() => setCalendarModalOpen(false)}
       >
-        <form className="form modalForm" onSubmit={(e) => void submitSlot(e)}>
-          <p className="muted small modalIntro">Нэг слот = 30 минут. Эхлэл :00 эсвэл :30 байхаар оруулна уу.</p>
-          <label>
-            Эхлэх цаг
-            <input type="datetime-local" value={slotStartTime} onChange={(e) => setSlotStartTime(e.target.value)} required />
-          </label>
-          <div className="buttonRow subjectModalActions">
-            <button type="button" className="btnGhost" onClick={() => setSlotModalOpen(false)}>
-              Цуцлах
-            </button>
-            <button type="submit">{editingSlotId != null ? 'Хадгалах' : 'Нэмэх'}</button>
-          </div>
-        </form>
+        <p className="muted small modalIntro">
+          Долоо хоногийн хүснэгт дээр 30 минутын нүд сонгоно (06:00–22:00). Сул слот дээр дарж устгана.
+        </p>
+        <WeeklyAvailabilityCalendar
+          mode="teacher"
+          slots={calendarSlots}
+          onCreateSlot={(selection) => void createSlot(selection)}
+          onDeleteSlot={(slot) => {
+            if (slot.booked) return
+            setSlotPendingDelete(slot)
+          }}
+          onRangeChange={(start, end) => setCalendarRange({ start, end })}
+        />
       </Modal>
+
+      <ConfirmDialog
+        isOpen={slotPendingDelete != null}
+        title="Слот устгах"
+        message="Энэ слотыг устгах уу?"
+        confirmLabel="Устгах"
+        cancelLabel="Цуцлах"
+        confirmTone="danger"
+        isConfirming={isDeletingSlot}
+        onClose={() => {
+          if (!isDeletingSlot) setSlotPendingDelete(null)
+        }}
+        onConfirm={() => {
+          if (slotPendingDelete) void deleteSlot(slotPendingDelete.id)
+        }}
+      />
 
       <Modal
         title="Материал байршуулах"

@@ -39,4 +39,26 @@ class ScheduleSlotRulesTest {
                 .satisfies(ex ->
                         assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.BAD_REQUEST.value()));
     }
+
+    @Test
+    void acceptsBusinessHourStarts() {
+        ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 6, 0));
+        ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 21, 30));
+    }
+
+    @Test
+    void rejectsStartsBeforeSixAm() {
+        assertThatThrownBy(() -> ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 5, 30)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex ->
+                        assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void rejectsStartsAtOrAfterTenPm() {
+        assertThatThrownBy(() -> ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 22, 0)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex ->
+                        assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.BAD_REQUEST.value()));
+    }
 }

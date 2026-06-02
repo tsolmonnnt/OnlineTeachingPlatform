@@ -3,6 +3,7 @@ package com.tsolmon.online_teaching_platform.booking.api;
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
 import com.tsolmon.online_teaching_platform.booking.api.dto.BookingResponse;
 import com.tsolmon.online_teaching_platform.booking.api.dto.CreateBookingRequest;
+import com.tsolmon.online_teaching_platform.booking.api.dto.UpdateMeetingLinkRequest;
 import com.tsolmon.online_teaching_platform.booking.application.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,16 @@ public class BookingController {
     public BookingResponse cancelBooking(Authentication authentication, @PathVariable Long bookingId) {
         AuthUser authUser = (AuthUser) authentication.getPrincipal();
         return bookingService.cancelBooking(authUser, bookingId);
+    }
+
+    @PatchMapping("/{bookingId}/meeting-link")
+    public BookingResponse updateMeetingLink(
+            Authentication authentication,
+            @PathVariable Long bookingId,
+            @Valid @RequestBody UpdateMeetingLinkRequest request
+    ) {
+        AuthUser authUser = (AuthUser) authentication.getPrincipal();
+        return bookingService.updateMeetingLink(authUser, bookingId, request);
     }
 }
 

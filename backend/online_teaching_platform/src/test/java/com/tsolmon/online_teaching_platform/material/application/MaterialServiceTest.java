@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -75,7 +76,7 @@ class MaterialServiceTest {
         List<TeachingMaterialResponse> anonymousResponse = service(configured()).listForTeacher(10L, null);
         assertThat(anonymousResponse.get(0).secureUrl()).isNull();
 
-        when(courseAccessService.hasConfirmedAccess(200L, 10L, 3L)).thenReturn(false, true);
+        when(courseAccessService.hasCourseAccess(eq(200L), eq(10L), eq(3L), any())).thenReturn(false, true);
         List<TeachingMaterialResponse> blockedStudent = service(configured()).listForTeacher(
                 10L,
                 new AuthUser(200L, "student@test.mn", Role.STUDENT)

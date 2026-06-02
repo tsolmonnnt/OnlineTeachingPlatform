@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tsolmon.online_teaching_platform.course.domain.CourseSubject;
 import com.tsolmon.online_teaching_platform.course.domain.CourseSubjectRepository;
 import com.tsolmon.online_teaching_platform.material.domain.TeachingMaterialRepository;
+import com.tsolmon.online_teaching_platform.schedule.domain.TeacherAvailabilityRepository;
+import com.tsolmon.online_teaching_platform.schedule.domain.TeacherAvailabilitySlot;
 import com.tsolmon.online_teaching_platform.teacher.domain.TeacherProfile;
 import com.tsolmon.online_teaching_platform.teacher.domain.TeacherRepository;
 import com.tsolmon.online_teaching_platform.user.repository.UserRepository;
@@ -52,6 +54,9 @@ public abstract class RequirementsIntegrationTestSupport {
     @Autowired
     protected TeachingMaterialRepository materialRepository;
 
+    @Autowired
+    protected TeacherAvailabilityRepository availabilityRepository;
+
     protected ConfirmedCourseAccess createConfirmedCourseAccess(String suffix) throws Exception {
         RegisteredUser teacher = registerUser("Teacher " + suffix, suffix + ".teacher@test.mn", "TEACHER");
         RegisteredUser student = registerUser("Student " + suffix, suffix + ".student@test.mn", "STUDENT");
@@ -97,12 +102,31 @@ public abstract class RequirementsIntegrationTestSupport {
         return new ConfirmedCourseAccess(
                 teacher.token(),
                 student.token(),
+                student.userId(),
                 teacherProfileId,
                 bookingId,
+                slotId,
                 java.getId(),
                 teacherProfile,
                 java
         );
+    }
+
+    /** Moves a booked slot into the recent past so the lesson counts as attended within the access window. */
+    protected void attendBookingNow(long slotId) {
+        TeacherAvailabilitySlot slot = availabilityRepository.findById(slotId).orElseThrow();
+        LocalDateTime now = LocalDateTime.now();
+        slot.setStartTime(now.minusHours(2));
+        slot.setEndTime(now.minusHours(1));
+        availabilityRepository.save(slot);
+    }
+
+    /** Moves a booked slot to a fixed start/end (used by access-window tests). */
+    protected void setBookingSlotTimes(long slotId, LocalDateTime start, LocalDateTime end) {
+        TeacherAvailabilitySlot slot = availabilityRepository.findById(slotId).orElseThrow();
+        slot.setStartTime(start);
+        slot.setEndTime(end);
+        availabilityRepository.save(slot);
     }
 
     protected long findTeacherProfileIdByQuery(String query) throws Exception {
@@ -223,8 +247,10 @@ public abstract class RequirementsIntegrationTestSupport {
     public record ConfirmedCourseAccess(
             String teacherToken,
             String studentToken,
+            long studentUserId,
             long teacherProfileId,
             long bookingId,
+            long slotId,
             long courseSubjectId,
             TeacherProfile teacherProfile,
             CourseSubject courseSubject

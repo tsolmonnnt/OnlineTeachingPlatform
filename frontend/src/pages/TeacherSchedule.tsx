@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, fetchJson } from '../lib/api'
-import { apiDateTimeToDatetimeLocalValue, datetimeLocalInputToApi, formatLocalDateTime } from '../lib/datetime'
+import { calendarSelectionToApiDateTime, parseLocalDateTime } from '../lib/datetime'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import type { AvailabilitySlot, CourseSubject } from '../auth/types'
+import { WeeklyAvailabilityCalendar } from '../components/WeeklyAvailabilityCalendar'
+import type { CalendarSlotSelection } from '../components/WeeklyAvailabilityCalendar'
 
 function pickCourseSubjectId(teaching: CourseSubject[], rawParam: string | null): number | '' {
   const n = rawParam ? Number(rawParam) : NaN
@@ -16,20 +19,27 @@ export default function TeacherSchedulePage() {
   const [slots, setSlots] = useState<AvailabilitySlot[]>([])
   const [subjects, setSubjects] = useState<CourseSubject[]>([])
   const [courseSubjectId, setCourseSubjectId] = useState<number | ''>('')
-  const [startTime, setStartTime] = useState('')
-  const [editingSlotId, setEditingSlotId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [slotPendingDelete, setSlotPendingDelete] = useState<AvailabilitySlot | null>(null)
+  const [isDeletingSlot, setIsDeletingSlot] = useState(false)
 
-  async function load() {
+  async function load(range?: { start: Date; end: Date }) {
     setError(null)
     try {
-      const [slotResult, teaching] = await Promise.all([
-        fetchJson<AvailabilitySlot[]>('/api/schedules/me', { method: 'GET' }),
-        fetchJson<CourseSubject[]>('/api/course/subjects/teaching', { method: 'GET' }),
-      ])
-      setSlots(slotResult)
+      const teaching = await fetchJson<CourseSubject[]>('/api/course/subjects/teaching', { method: 'GET' })
       setSubjects(teaching)
       setCourseSubjectId(pickCourseSubjectId(teaching, searchParams.get('courseSubjectId')))
+      if (range) {
+        const meSlots = await fetchJson<AvailabilitySlot[]>('/api/schedules/me', { method: 'GET' })
+        const filtered = meSlots.filter((slot) => {
+          const start = parseLocalDateTime(slot.startTime)
+          return start >= range.start && start < range.end
+        })
+        setSlots(filtered)
+      } else {
+        const slotResult = await fetchJson<AvailabilitySlot[]>('/api/schedules/me', { method: 'GET' })
+        setSlots(slotResult)
+      }
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
       else setError('Хуваарь ачаалж чадсангүй')
@@ -47,69 +57,49 @@ export default function TeacherSchedulePage() {
   const rawUrl = searchParams.get('courseSubjectId')
   const urlNum = rawUrl ? Number(rawUrl) : NaN
   const urlMatches = !Number.isNaN(urlNum) && subjects.some((s) => s.id === urlNum)
-  const hideSubjectPicker = editingSlotId == null && (subjects.length === 1 || urlMatches)
+  const hideSubjectPicker = subjects.length === 1 || urlMatches
 
-  async function addOrUpdateSlot(e: React.FormEvent) {
-    e.preventDefault()
+  async function createSlot(selection: CalendarSlotSelection) {
     setError(null)
-    if (!startTime || courseSubjectId === '') {
+    if (courseSubjectId === '') {
       setError('Хичээл болон эхлэх цаг сонгоно уу')
       return
     }
     const payload = JSON.stringify({
-      startTime: datetimeLocalInputToApi(startTime),
+      startTime: calendarSelectionToApiDateTime(selection.startStr, selection.start),
       courseSubjectId,
     })
     try {
-      if (editingSlotId != null) {
-        const updated = await fetchJson<AvailabilitySlot>(`/api/schedules/me/${editingSlotId}`, {
-          method: 'PUT',
-          body: payload,
-        })
-        setSlots((prev) =>
-          prev.map((s) => (s.id === editingSlotId ? updated : s)).sort((a, b) => a.startTime.localeCompare(b.startTime)),
-        )
-        setEditingSlotId(null)
-      } else {
-        const created = await fetchJson<AvailabilitySlot>('/api/schedules/me', {
-          method: 'POST',
-          body: payload,
-        })
-        setSlots((prev) => [...prev, created].sort((a, b) => a.startTime.localeCompare(b.startTime)))
-      }
-      setStartTime('')
+      const created = await fetchJson<AvailabilitySlot>('/api/schedules/me', {
+        method: 'POST',
+        body: payload,
+      })
+      setSlots((prev) => [...prev, created].sort((a, b) => a.startTime.localeCompare(b.startTime)))
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
-      else setError(editingSlotId != null ? 'Слот шинэчлэх үед алдаа гарлаа' : 'Цагийн слот нэмэх үед алдаа гарлаа')
+      else setError('Цагийн слот нэмэх үед алдаа гарлаа')
     }
-  }
-
-  function beginEdit(slot: AvailabilitySlot) {
-    if (slot.booked) return
-    setEditingSlotId(slot.id)
-    const sid = slot.courseSubjectId
-    setCourseSubjectId(sid != null ? sid : (subjects[0]?.id ?? ''))
-    setStartTime(apiDateTimeToDatetimeLocalValue(slot.startTime))
-  }
-
-  function cancelEdit() {
-    setEditingSlotId(null)
-    setStartTime('')
-    setCourseSubjectId(pickCourseSubjectId(subjects, searchParams.get('courseSubjectId')))
   }
 
   async function deleteSlot(slotId: number) {
     setError(null)
+    setIsDeletingSlot(true)
     try {
       await fetchJson<void>(`/api/schedules/me/${slotId}`, { method: 'DELETE' })
       setSlots((prev) => prev.filter((s) => s.id !== slotId))
+      setSlotPendingDelete(null)
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
       else setError('Слот устгах үед алдаа гарлаа')
+    } finally {
+      setIsDeletingSlot(false)
     }
   }
 
-  const selectedName = subjects.find((s) => s.id === courseSubjectId)?.name
+  const selectedName = useMemo(
+    () => subjects.find((s) => s.id === courseSubjectId)?.name,
+    [subjects, courseSubjectId],
+  )
 
   return (
     <div className="page">
@@ -124,7 +114,7 @@ export default function TeacherSchedulePage() {
           </p>
         </div>
       ) : null}
-      <form className="card form" onSubmit={addOrUpdateSlot}>
+      <div className="card form">
         {courseSubjectId !== '' && hideSubjectPicker ? (
           <div>
             <span className="muted small">Хичээл</span>
@@ -152,46 +142,42 @@ export default function TeacherSchedulePage() {
             </select>
           </label>
         )}
-        <label>
-          Эхлэх цаг (дуусахыг систем автоматаар +30 минут)
-          <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
-        </label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button type="submit">{editingSlotId != null ? 'Шинэчлэх' : 'Слот нэмэх'}</button>
-          {editingSlotId != null ? (
-            <button type="button" className="btnGhost" onClick={cancelEdit}>
-              Цуцлах
-            </button>
-          ) : null}
-        </div>
-      </form>
+        <p className="muted small">Календар дээр хоосон 30 минутын нүд сонгож слот нэмнэ. Сул слот дээр дарж устгана.</p>
+      </div>
 
       {error ? <div className="error" style={{ marginTop: 12 }}>{error}</div> : null}
 
-      <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-        {slots.map((slot) => (
-          <div key={slot.id} className="card">
-            <p>
-              <strong>{slot.courseSubjectName ?? '—'}</strong>
-              {' · '}
-              {formatLocalDateTime(slot.startTime)} – {formatLocalDateTime(slot.endTime)}
-            </p>
-            <p><strong>Төлөв:</strong> {slot.booked ? 'Захиалагдсан' : 'Сул'}</p>
-            {!slot.booked ? (
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button type="button" onClick={() => beginEdit(slot)}>
-                    Засах
-                  </button>
-
-                  <button type="button" onClick={() => deleteSlot(slot.id)}>
-                    Устгах
-                  </button>
-                </div>
-            ) : null}
-          </div>
-        ))}
-        {!slots.length ? <div className="muted">Одоогоор слот байхгүй.</div> : null}
+      <div className="card">
+        <WeeklyAvailabilityCalendar
+          mode="teacher"
+          slots={slots}
+          onCreateSlot={(selection) => void createSlot(selection)}
+          onDeleteSlot={(slot) => {
+            if (slot.booked) return
+            setSlotPendingDelete(slot)
+          }}
+          onRangeChange={(start, end) => {
+            void load({ start, end })
+          }}
+        />
+        {!slots.length ? <div className="muted" style={{ marginTop: 10 }}>Сонгосон 7 хоногт слот байхгүй.</div> : null}
       </div>
+
+      <ConfirmDialog
+        isOpen={slotPendingDelete != null}
+        title="Слот устгах"
+        message="Энэ слотыг устгах уу?"
+        confirmLabel="Устгах"
+        cancelLabel="Цуцлах"
+        confirmTone="danger"
+        isConfirming={isDeletingSlot}
+        onClose={() => {
+          if (!isDeletingSlot) setSlotPendingDelete(null)
+        }}
+        onConfirm={() => {
+          if (slotPendingDelete) void deleteSlot(slotPendingDelete.id)
+        }}
+      />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useUnreadNotificationCount } from '../hooks/useUnreadNotificationCount'
 import { useTheme } from '../theme/ThemeContext'
 
 type ShellNavItem = {
@@ -36,8 +37,11 @@ export default function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { count: unreadNotificationCount } = useUnreadNotificationCount(Boolean(user))
 
   const closeSidebar = () => setSidebarOpen(false)
+  const unreadBadgeLabel =
+    unreadNotificationCount > 9 ? '9+' : unreadNotificationCount > 0 ? String(unreadNotificationCount) : null
   const flashMessage = getFlashMessage(location.state)
   const guestNavItems: ShellNavItem[] = [
     { to: '/', label: 'Нүүр', end: true },
@@ -103,9 +107,20 @@ export default function AppShell() {
             <NavLink
               className={({ isActive }) => `shellIconLink${isActive ? ' shellTopLinkActive' : ''}`}
               to="/notifications"
-              aria-label="Мэдэгдэл"
+              aria-label={
+                unreadNotificationCount > 0
+                  ? `Мэдэгдэл (${unreadNotificationCount} уншаагүй)`
+                  : 'Мэдэгдэл'
+              }
             >
-              <NotificationsIcon fontSize="small" />
+              <span className="shellIconBadgeWrap">
+                <NotificationsIcon fontSize="small" />
+                {unreadBadgeLabel ? (
+                  <span className="shellIconBadge" aria-hidden>
+                    {unreadBadgeLabel}
+                  </span>
+                ) : null}
+              </span>
             </NavLink>
             <button
               type="button"
@@ -183,7 +198,12 @@ export default function AppShell() {
                   to={item.to}
                   onClick={closeSidebar}
                 >
-                  {item.label}
+                  <span className="shellSideLinkLabel">{item.label}</span>
+                  {item.to === '/notifications' && unreadBadgeLabel ? (
+                    <span className="shellSideBadge" aria-hidden>
+                      {unreadBadgeLabel}
+                    </span>
+                  ) : null}
                 </NavLink>
               ))}
             </div>

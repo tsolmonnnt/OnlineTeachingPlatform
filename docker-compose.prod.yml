@@ -21,6 +21,8 @@ services:
     image: ghcr.io/${GHCR_OWNER}/online-teaching-platform-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
+      TZ: Asia/Ulaanbaatar
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ulaanbaatar
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       DB_URL: ${DB_URL}
       DB_USER: ${DB_USER}

@@ -72,7 +72,12 @@ public class MaterialService {
         if (m.getCourseSubject() == null) {
             return false;
         }
-        return courseAccessService.hasConfirmedAccess(viewer.id(), teacherProfileId, m.getCourseSubject().getId());
+        return courseAccessService.hasCourseAccess(
+                viewer.id(),
+                teacherProfileId,
+                m.getCourseSubject().getId(),
+                java.time.LocalDateTime.now()
+        );
     }
 
     @Transactional

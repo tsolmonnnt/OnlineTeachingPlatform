@@ -2,6 +2,7 @@ package com.tsolmon.online_teaching_platform.notification.api;
 
 import com.tsolmon.online_teaching_platform.auth.domain.AuthUser;
 import com.tsolmon.online_teaching_platform.notification.api.dto.NotificationResponse;
+import com.tsolmon.online_teaching_platform.notification.api.dto.UnreadCountResponse;
 import com.tsolmon.online_teaching_platform.notification.application.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -23,6 +24,12 @@ public class NotificationController {
     public List<NotificationResponse> myNotifications(Authentication authentication) {
         AuthUser authUser = (AuthUser) authentication.getPrincipal();
         return notificationService.getMyNotifications(authUser);
+    }
+
+    @GetMapping("/me/unread-count")
+    public UnreadCountResponse unreadCount(Authentication authentication) {
+        AuthUser authUser = (AuthUser) authentication.getPrincipal();
+        return notificationService.getUnreadCount(authUser);
     }
 
     @PatchMapping("/{notificationId}/read")

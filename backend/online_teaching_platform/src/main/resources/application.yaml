@@ -1,6 +1,8 @@
 spring:
   application:
     name: online_teaching_platform
+  jackson:
+    time-zone: Asia/Ulaanbaatar
   servlet:
     multipart:
       max-file-size: 40MB
@@ -11,6 +13,9 @@ spring:
     password: ${DB_PASSWORD:postgres}
   flyway:
     enabled: true
+    # Hibernate-created DBs have no flyway_schema_history; baseline then run V10+ repairs only.
+    baseline-on-migrate: true
+    baseline-version: 9
   jpa:
     hibernate:
       ddl-auto: update

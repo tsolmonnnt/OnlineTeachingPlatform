@@ -61,7 +61,7 @@ public class ScheduleService {
         if (overlaps) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "This 30-minute slot overlaps an existing slot (same teacher cannot teach two lessons at once)"
+                    "Сонгосон цагийн хуваарь өмнөх хуваарьтай давхцаж байна. Нэг багш нэг цагт зөвхөн нэг хичээл заах боломжтой."
             );
         }
 
@@ -111,7 +111,7 @@ public class ScheduleService {
         if (overlaps) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "This 30-minute slot overlaps an existing slot (same teacher cannot teach two lessons at once)"
+                    "Сонгосон цагийн хуваарь өмнөх хуваарьтай давхцаж байна. Нэг багш нэг цагт зөвхөн нэг хичээл заах боломжтой."
             );
         }
 

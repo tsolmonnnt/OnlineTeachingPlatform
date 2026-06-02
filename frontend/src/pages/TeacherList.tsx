@@ -177,7 +177,7 @@ export default function TeacherListPage() {
               />
 
               <div className="teacherCardFooter">
-                <Link className="buttonLink" to={`/teachers/${teacher.id}`}>
+                <Link className="buttonLink teacherCardCta" to={`/teachers/${teacher.id}`}>
                   Профайл үзэх
                 </Link>
               </div>

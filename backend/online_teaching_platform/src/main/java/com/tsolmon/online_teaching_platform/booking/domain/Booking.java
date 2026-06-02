@@ -43,6 +43,24 @@ public class Booking {
     @Column(nullable = false)
     private BookingStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private BookingType bookingType = BookingType.SINGLE_LESSON;
+
+    @Column(length = 1024)
+    private String meetingLink;
+
+    @Column(nullable = false)
+    private boolean reminderSent;
+
+    private Integer packageTotalLessons;
+
+    private Integer packageCompletedLessons;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_booking_id")
+    private Booking parentBooking;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -53,6 +71,9 @@ public class Booking {
     public void prePersist() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (bookingType == null) {
+            bookingType = BookingType.SINGLE_LESSON;
+        }
     }
 
     @PreUpdate

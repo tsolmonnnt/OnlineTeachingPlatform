@@ -580,6 +580,59 @@ button.quickActionBtn:hover:not(:disabled) {
   transition: background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
+.weeklyCalendarWrap {
+  margin-top: 0.5rem;
+  max-height: min(70vh, 560px);
+  overflow: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.weeklyCalendarWrap .fc-header-toolbar {
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.weeklyCalendarWrap .fc-toolbar-title {
+  font-size: 1rem;
+}
+
+.weeklyCalendarWrap .fc-timegrid {
+  min-width: 280px;
+}
+
+@media (max-width: 640px) {
+  .weeklyCalendarWrap {
+    max-height: min(65vh, 480px);
+  }
+
+  .weeklyCalendarWrap .fc-toolbar-title {
+    font-size: 0.9rem;
+  }
+
+  .weeklyCalendarWrap .fc-col-header-cell-cushion,
+  .weeklyCalendarWrap .fc-timegrid-slot-label-cushion {
+    font-size: 0.75rem;
+  }
+
+  .weeklyCalendarWrap .fc-button {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.45rem;
+  }
+}
+
+.fc .fc-slot-available {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+}
+
+.fc .fc-slot-booked {
+  background: rgba(107, 114, 128, 0.18);
+  border-color: rgba(107, 114, 128, 0.35);
+  cursor: not-allowed;
+}
+
 .buttonLink:hover {
   background: var(--ui-primary-hover);
   border-color: var(--ui-primary-hover);
@@ -754,6 +807,51 @@ button.quickActionBtn:hover:not(:disabled) {
   margin-top: auto;
   display: flex;
   justify-content: flex-start;
+}
+
+.subjectCalendarSection {
+  margin-bottom: 1rem;
+}
+
+.subjectSlotSummary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ui-border);
+}
+
+@media (max-width: 640px) {
+  .teacherCard {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .teacherCardHeader {
+    order: 1;
+  }
+
+  .teacherCardFooter {
+    order: 2;
+    margin-top: 0;
+    width: 100%;
+  }
+
+  .teacherCardFooter .teacherCardCta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    touch-action: manipulation;
+    scroll-margin-top: 72px;
+  }
+
+  .teacherCard .chipRow {
+    order: 3;
+  }
+
+  .teacherCardInfo {
+    order: 4;
+  }
 }
 
 .detailLayout {
@@ -1366,6 +1464,25 @@ a.quickActionBtn:hover {
   box-shadow: var(--shadow);
 }
 
+.modalPanelWide {
+  max-width: min(95vw, 920px);
+}
+
+.modalBody .weeklyCalendarWrap {
+  max-height: min(70vh, 560px);
+}
+
+.confirmDialogMessage {
+  margin: 0;
+  color: var(--ui-text);
+  line-height: 1.5;
+}
+
+.confirmDialogActions {
+  justify-content: flex-end;
+  width: 100%;
+}
+
 .modalHeader {
   display: flex;
   align-items: center;
@@ -1839,6 +1956,50 @@ a.quickActionBtn:hover {
   padding: 6px 10px;
 }
 
+.shellIconBadgeWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shellIconBadge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  border: 2px solid var(--shell-bg, #0f172a);
+  box-sizing: border-box;
+}
+
+.shellSideLinkLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.shellSideBadge {
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
 .shellAvatar {
   width: 32px;
   height: 32px;
@@ -1958,6 +2119,10 @@ a.quickActionBtn:hover {
 }
 
 .shellSideLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   text-decoration: none;
   color: #cbd5e1;
   padding: 8px 10px;

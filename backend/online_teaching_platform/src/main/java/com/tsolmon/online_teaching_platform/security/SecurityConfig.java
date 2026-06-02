@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/bookings/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/confirm").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/cancel").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/meeting-link").hasRole("TEACHER")
 
                         .requestMatchers("/api/notifications/**").authenticated()
 

@@ -15,11 +15,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
+    private static final long REVIEW_WINDOW_HOURS = 48;
     private final ReviewRepository reviewRepository;
     private final BookingRepository bookingRepository;
 
@@ -43,8 +45,25 @@ public class ReviewService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only review your own bookings");
         }
 
-        if (booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "You can only review confirmed bookings");
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cancelled booking cannot be reviewed");
+        }
+
+        LocalDateTime end = booking.getAvailabilitySlot().getEndTime();
+        if (end == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Booking end time is missing");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(end)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You can review only after the lesson ends");
+        }
+        LocalDateTime reviewDeadline = end.plusHours(REVIEW_WINDOW_HOURS);
+        if (now.isAfter(reviewDeadline)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Review deadline has passed");
+        }
+
+        if (booking.getStatus() != BookingStatus.COMPLETED && booking.getStatus() != BookingStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You can review only completed bookings");
         }
 
         if (reviewRepository.existsByBooking_Id(booking.getId())) {
@@ -59,6 +78,8 @@ public class ReviewService {
         review.setComment(request.comment() != null ? request.comment().trim() : null);
 
         Review saved = reviewRepository.save(review);
+        booking.setStatus(BookingStatus.REVIEWED);
+        bookingRepository.save(booking);
         return ReviewResponse.from(saved);
     }
 }
