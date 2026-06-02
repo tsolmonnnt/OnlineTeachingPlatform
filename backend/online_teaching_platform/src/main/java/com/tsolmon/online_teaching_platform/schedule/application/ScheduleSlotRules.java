@@ -11,9 +11,9 @@ import java.time.LocalDateTime;
 public final class ScheduleSlotRules {
 
     public static final int SLOT_MINUTES = 30;
-    private static final int EARLIEST_START_HOUR = 6;
-    /** Last allowed slot start is 21:30 (ends 22:00). */
-    private static final int LATEST_START_HOUR = 21;
+    private static final int EARLIEST_START_HOUR = 8;
+    /** Last allowed slot start is 19:30 (ends 20:00). */
+    private static final int LATEST_START_HOUR = 19;
     private static final int LATEST_START_MINUTE = 30;
 
     private ScheduleSlotRules() {
@@ -46,13 +46,13 @@ public final class ScheduleSlotRules {
         if (hour < EARLIEST_START_HOUR) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Lessons are only available between 06:00 and 22:00"
+                    "Lessons are only available between 08:00 and 20:00"
             );
         }
         if (hour > LATEST_START_HOUR || (hour == LATEST_START_HOUR && minute > LATEST_START_MINUTE)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Lessons are only available between 06:00 and 22:00 (last start 21:30)"
+                    "Lessons are only available between 08:00 and 20:00 (last start 19:30)"
             );
         }
     }

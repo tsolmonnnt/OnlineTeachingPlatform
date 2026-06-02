@@ -374,7 +374,7 @@ export default function TeacherSubjectPage() {
 
       <SectionCard
         title="Сул цагууд"
-        subtitle="30 минутын слотуудыг долоо хоногийн каленараар нэмж, устгана (06:00–22:00)."
+        subtitle="30 минутын слотуудыг долоо хоногийн каленараар нэмж, устгана (08:00–20:00)."
         actions={
           <button type="button" className="btnGhost" onClick={openCalendarModal}>
             Календар нээх
@@ -518,7 +518,7 @@ export default function TeacherSubjectPage() {
         onClose={() => setCalendarModalOpen(false)}
       >
         <p className="muted small modalIntro">
-          Долоо хоногийн хүснэгт дээр 30 минутын нүд сонгоно (06:00–22:00). Сул слот дээр дарж устгана.
+          Долоо хоногийн хүснэгт дээр 30 минутын нүд сонгоно (08:00–20:00). Сул слот дээр дарж устгана.
         </p>
         <WeeklyAvailabilityCalendar
           mode="teacher"

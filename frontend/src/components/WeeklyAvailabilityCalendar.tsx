@@ -3,8 +3,8 @@ import interactionPlugin from '@fullcalendar/interaction'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import type { AvailabilitySlot } from '../auth/types'
 
-const SLOT_MIN_HOUR = 6
-const SLOT_MAX_HOUR = 22
+const SLOT_MIN_HOUR = 8
+const SLOT_MAX_HOUR = 20
 const CALENDAR_HEIGHT = 520
 
 export type CalendarSlotSelection = {
@@ -23,10 +23,8 @@ type Props = {
 
 function isWithinBusinessHours(date: Date): boolean {
   const hour = date.getHours()
-  const minute = date.getMinutes()
   if (hour < SLOT_MIN_HOUR) return false
   if (hour >= SLOT_MAX_HOUR) return false
-  if (hour === 21 && minute > 30) return false
   return true
 }
 
@@ -49,8 +47,8 @@ export function WeeklyAvailabilityCalendar({
           right: '',
         }}
         allDaySlot={false}
-        slotMinTime="06:00:00"
-        slotMaxTime="22:00:00"
+        slotMinTime="08:00:00"
+        slotMaxTime="20:00:00"
         slotDuration="00:30:00"
         slotLabelInterval="00:30:00"
         slotLabelFormat={{

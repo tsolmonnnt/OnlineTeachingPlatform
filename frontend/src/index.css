@@ -8,7 +8,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --content-max: 1100px;
+  --content-max: 1500px;
 
   --ui-bg: #f8fafc;
   --ui-surface: #ffffff;
@@ -755,7 +755,7 @@ button.quickActionBtn:hover:not(:disabled) {
 .teacherDiscoveryGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  gap: 24px;
 }
 
 .teacherCard {
@@ -807,6 +807,8 @@ button.quickActionBtn:hover:not(:disabled) {
   margin-top: auto;
   display: flex;
   justify-content: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
 .subjectCalendarSection {
@@ -820,19 +822,8 @@ button.quickActionBtn:hover:not(:disabled) {
 }
 
 @media (max-width: 640px) {
-  .teacherCard {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .teacherCardHeader {
-    order: 1;
-  }
-
-  .teacherCardFooter {
-    order: 2;
-    margin-top: 0;
-    width: 100%;
+  .teacherDiscoveryGrid {
+    grid-template-columns: 1fr;
   }
 
   .teacherCardFooter .teacherCardCta {
@@ -842,15 +833,6 @@ button.quickActionBtn:hover:not(:disabled) {
     width: 100%;
     min-height: 44px;
     touch-action: manipulation;
-    scroll-margin-top: 72px;
-  }
-
-  .teacherCard .chipRow {
-    order: 3;
-  }
-
-  .teacherCardInfo {
-    order: 4;
   }
 }
 

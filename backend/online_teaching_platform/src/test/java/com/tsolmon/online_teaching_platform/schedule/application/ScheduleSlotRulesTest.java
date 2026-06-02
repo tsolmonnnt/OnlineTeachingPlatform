@@ -42,21 +42,21 @@ class ScheduleSlotRulesTest {
 
     @Test
     void acceptsBusinessHourStarts() {
-        ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 6, 0));
-        ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 21, 30));
+        ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 8, 0));
+        ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 19, 30));
     }
 
     @Test
-    void rejectsStartsBeforeSixAm() {
-        assertThatThrownBy(() -> ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 5, 30)))
+    void rejectsStartsBeforeEightAm() {
+        assertThatThrownBy(() -> ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 7, 30)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex ->
                         assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.BAD_REQUEST.value()));
     }
 
     @Test
-    void rejectsStartsAtOrAfterTenPm() {
-        assertThatThrownBy(() -> ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 22, 0)))
+    void rejectsStartsAtOrAfterEightPm() {
+        assertThatThrownBy(() -> ScheduleSlotRules.validateStartBoundary(LocalDateTime.of(2026, 5, 3, 20, 0)))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex ->
                         assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(HttpStatus.BAD_REQUEST.value()));
